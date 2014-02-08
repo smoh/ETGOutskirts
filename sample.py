@@ -8,7 +8,7 @@ rc('font', size=15)
 rc('axes', grid=True)
 rc('legend', frameon=False)
 
-if 0:
+if 1:
     master = Table.read('nsa_morph.fits')
 b = dict(F=0, N=1, u=2, g=3, r=4, i=5, z=6)
 
@@ -72,3 +72,15 @@ print 'Ell > 0.6 common : %8i' % count_nonzero(bool_OKM_select & bool_MATCH_sele
 
 
 
+def randTrue(boolarr, size=10):
+    """ Return randomly selected index of boolarr=True """
+    ind = where(boolarr)[0]
+    sub = randint(len(ind), size=size)
+    return ind[sub]
+
+# names = ['IAUNAME', 'SUBIDR']
+
+names = ['Z_1', 'RA_1', 'DEC_1']
+master[names][randTrue(bool_OK, size=200)].write('rand_OK.cat', format='ascii')
+master[names][randTrue(bool_MATCH_reject, size=200)].write('rand_MATCH_reject.cat', format='ascii')
+master[names][randTrue(bool_MATCH_select, size=200)].write('rand_MATCH_select.cat', format='ascii')
