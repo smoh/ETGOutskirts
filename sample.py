@@ -80,7 +80,10 @@ def randTrue(boolarr, size=10):
 
 # names = ['IAUNAME', 'SUBIDR']
 
-names = ['Z_1', 'RA_1', 'DEC_1']
-master[names][randTrue(bool_OK, size=200)].write('rand_OK.cat', format='ascii')
-master[names][randTrue(bool_MATCH_reject, size=200)].write('rand_MATCH_reject.cat', format='ascii')
-master[names][randTrue(bool_MATCH_select, size=200)].write('rand_MATCH_select.cat', format='ascii')
+subsize = 1
+names_sdss = ['Z_1', 'RA_1', 'DEC_1']
+names_nsa  = ['NSAID', 'SUBDIR', 'IAUNAME', 'PID', 'AID']
+names = names_nsa
+master[names][randTrue(bool_OK, size=subsize)].write('rand_OK.cat', format='ascii')
+master[names][randTrue(bool_MATCH_reject, size=subsize)].write('rand_MATCH_reject.cat', format='ascii')
+master[names][randTrue(bool_MATCH_select, size=subsize)].write('rand_MATCH_select.cat', format='ascii')
