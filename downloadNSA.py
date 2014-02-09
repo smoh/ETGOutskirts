@@ -41,7 +41,7 @@ def downloadfile(url, savename=None, prefix=None):
         print "URL Error:", e.reason, url
 
 
-def downloadNSA(subdir, iauname, pid, aid, prefix, savename):
+def downloadNSA(subdir, iauname, pid, aid, prefix):
     """
     Download NSA child, parent, and psf images
     """
@@ -52,7 +52,7 @@ def downloadNSA(subdir, iauname, pid, aid, prefix, savename):
     parent = '%s-parent-%s.fits.gz' % (iauname, pid)
 
     for f, sub in zip([child, parent], ['image/', 'ivar/']):
-        downloadfile(url+f, savename=savename, prefix=prefix + '/' + sub)
+        downloadfile(url+f, prefix=prefix + '/' + sub)
 
 
 
@@ -60,10 +60,9 @@ def downloadNSA(subdir, iauname, pid, aid, prefix, savename):
 
 
 if __name__ == '__main__':
-    nsaid = '124654.fits'
-    subdir = '16h/p48/J161618.57+495542.2'
-    iauname = 'J161618.57+495542.2'
-    pid = '37'
-    aid = '3'
-    downloadNSA(subdir, iauname, pid, aid, 'test', nsaid)
+    subdir = '01h/p32/J011058.90+330907.9'
+    iauname = 'J011058.90+330907.9'
+    pid = '92'
+    aid = '0'
+    downloadNSA(subdir, iauname, pid, aid, 'test')
 

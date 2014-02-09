@@ -13,6 +13,9 @@ if 1:
 b = dict(F=0, N=1, u=2, g=3, r=4, i=5, z=6)
 
 print 'parent      : %8i' % len(master)
+
+# Sample selection following Zhu et al. 2010
+print '== Sample RS (Zhu et al. 2010) =='
 # redshift
 bool_Z = master['Z_1'] < 0.05
 # Red sequence
@@ -49,19 +52,22 @@ bool_OKM_reject = bool_OKM & (master['probaEll'] < 0.2)
 bool_OKM_select = bool_OKM & (master['probaEll'] > 0.6)
 print 'Ell < 0.2   : %8i' % count_nonzero(bool_OKM_reject)
 print 'Ell > 0.6   : %8i' % count_nonzero(bool_OKM_select)
+print '-'*80
 
 
 # ------------
-print '-'*80
+# Sample selection using probaEll of Huertas et al 2011
+print '== Sample probaEll (Huertas et al. 2011) =='
 print 'has morph   : %8i' % count_nonzero(bool_MATCH)
+print 'z < 0.05    : %8i' % count_nonzero(bool_MATCH & bool_Z)
 
 ax = figure().add_subplot(111)
 bins = arange(0., 1.01, 0.1)
 for k in ['probaE', 'probaEll', 'probaS0']:
     n, bins, patches = ax.hist(master[k][bool_MATCH], histtype='step', bins=bins, label='%s' % k)
 
-bool_MATCH_reject = bool_MATCH & (master['probaEll'] < 0.2)
-bool_MATCH_select = bool_MATCH & (master['probaEll'] > 0.6)
+bool_MATCH_reject = bool_MATCH & (master['probaEll'] < 0.2) & bool_Z
+bool_MATCH_select = bool_MATCH & (master['probaEll'] > 0.6) & bool_Z
 
 print 'Ell < 0.2   : %8i' % count_nonzero(bool_MATCH_reject)
 print 'Ell > 0.6   : %8i' % count_nonzero(bool_MATCH_select)
@@ -72,6 +78,7 @@ print 'Ell > 0.6 common : %8i' % count_nonzero(bool_OKM_select & bool_MATCH_sele
 
 
 
+# generate random selections
 def randTrue(boolarr, size=10):
     """ Return randomly selected index of boolarr=True """
     ind = where(boolarr)[0]
@@ -80,10 +87,10 @@ def randTrue(boolarr, size=10):
 
 # names = ['IAUNAME', 'SUBIDR']
 
-subsize = 1
+subsize = 250
 names_sdss = ['Z_1', 'RA_1', 'DEC_1']
 names_nsa  = ['NSAID', 'SUBDIR', 'IAUNAME', 'PID', 'AID']
-names = names_nsa
-master[names][randTrue(bool_OK, size=subsize)].write('rand_OK.cat', format='ascii')
-master[names][randTrue(bool_MATCH_reject, size=subsize)].write('rand_MATCH_reject.cat', format='ascii')
-master[names][randTrue(bool_MATCH_select, size=subsize)].write('rand_MATCH_select.cat', format='ascii')
+names = names_sdss
+master[names][randTrue(bool_OK, size=subsize)].write('rand_RS.cat', format='ascii')
+master[names][randTrue(bool_MATCH_reject, size=subsize)].write('rand_probaEll_reject.cat', format='ascii')
+master[names][randTrue(bool_MATCH_select, size=subsize)].write('rand_probaEll_select.cat', format='ascii')

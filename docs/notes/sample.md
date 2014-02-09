@@ -23,8 +23,12 @@ Nair & Abraham 2010 provides visual morph classification 0.01 < z < 0.1
 
 
 ## Experiment following Zhu+10
-*Sample 1*
+
+2014-02-07
 Parent sample: NSA catalog 145,155
+
+*Sample RS*
+Construct a sample following similar procedures of Zhu et al. 2010
 - Z < 0.05 123,396
 - velocity dispersion > 70 km/s 42,101
 - red sequence: $M_g - M_i > -0.05 \times (M_r + 16.0) + 0.65$ 
@@ -34,7 +38,25 @@ Parent sample: NSA catalog 145,155
 ---> 22,378
 
 Matched with Huertas-Company+11 (sep < 1 arcsec)
-* Of 21,587 matched with HC+11, 
+* Of 21,587 matched with HC+11, 13300 have probability of being elliptical less than
+0.2 (~60%), i.e., this sample is obviously highly contaminated. The most stringent
+constraint on the sample actually comes from surface brightness fitting.
+Only 5007 have probability of being elliptical more than 0.6. These two subgroups
+are contained within 'reject', and 'select' samples of Sample 2 -- all the conditions
+above does not add anything to probaEll condition.
+
+*Sample probaEll*
+Use Bayesian Automated Classification given by Huertas-Company et al. 2011
+- match with HC+11 107,125
+- z < 0.05 88,912
+- 'reject' sample: probaEll < 0.2 28,191
+- 'select' sample: probaEll > 0.6 5407
+
+
+For visual inspection, randomly select 250 galaxies from
+- Sample 1 -- rand_RS.cat
+- Sample 2 reject -- rand_probaEll_reject.cat
+- Sample 2 select -- rand_probaEll_select.cat
 
 
 
