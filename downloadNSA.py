@@ -51,8 +51,10 @@ def downloadNSA(subdir, iauname, pid, aid, prefix):
     child = '%s-%s-atlas-%s.fits.gz' % (iauname, pid, aid)
     parent = '%s-parent-%s.fits.gz' % (iauname, pid)
 
-    for f, sub in zip([child, parent], ['image/', 'ivar/']):
+    for f, sub in zip([child, parent], ['images/', 'ivar/']):
         downloadfile(url+f, prefix=prefix + '/' + sub)
+    for band in ['u', 'g', 'r', 'i', 'z', 'fd','nd']:
+        downloadfile('http://sdss.physics.nyu.edu/mblanton/v0/detect/v0_1/%s/%s-%s-bpsf.fits.gz' % (subdir, iauname, band), prefix=prefix+'/psf/')
 
 
 
@@ -60,9 +62,10 @@ def downloadNSA(subdir, iauname, pid, aid, prefix):
 
 
 if __name__ == '__main__':
+
     subdir = '01h/p32/J011058.90+330907.9'
     iauname = 'J011058.90+330907.9'
     pid = '92'
     aid = '0'
-    downloadNSA(subdir, iauname, pid, aid, 'test')
+    downloadNSA(subdir, iauname, pid, aid, 'bdfitter_testrun')
 
