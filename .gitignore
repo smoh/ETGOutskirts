@@ -39,3 +39,5 @@ nosetests.xml
 *.fits
 *.pdf
 *.swp
+bdfitter
+mpltools
