@@ -40,13 +40,17 @@ print 'has morph   : %8i' % count_nonzero(bool_MATCH & bool_OK)
 bool_OKM = bool_OK & bool_MATCH
 
 # prob dist of Sample 1
-ax = figure().add_subplot(111)
-bins = arange(0., 1.01, 0.1)
-for k in ['probaE', 'probaEll', 'probaS0']:
-    ax.hist(master[k][bool_OKM], histtype='step', bins=bins, label='%s' % k)
-xlabel('prob')
-ylabel('count')
-legend()
+def plotProbMorph_Sample1():
+    """probability of morph types"""
+    ax = figure().add_axes([0.15,0.15,0.8,0.8])
+    bins = arange(0., 1.01, 0.1)
+    for k in ['probaE', 'probaEll', 'probaS0']:
+        ax.hist(master[k][bool_OKM], histtype='step', bins=bins, label='%s' % k)
+    xlabel('prob')
+    ylabel('count')
+    legend()
+plotProbMorph_Sample1()
+savefig('sampleRS_morph.png')
 
 bool_OKM_reject = bool_OKM & (master['probaEll'] < 0.2)
 bool_OKM_select = bool_OKM & (master['probaEll'] > 0.6)
@@ -54,20 +58,29 @@ print 'Ell < 0.2   : %8i' % count_nonzero(bool_OKM_reject)
 print 'Ell > 0.6   : %8i' % count_nonzero(bool_OKM_select)
 print '-'*80
 
-
 # ------------
 # Sample selection using probaEll of Huertas et al 2011
 print '== Sample probaEll (Huertas et al. 2011) =='
 print 'has morph   : %8i' % count_nonzero(bool_MATCH)
 print 'z < 0.05    : %8i' % count_nonzero(bool_MATCH & bool_Z)
+print 'VD > 70 km/s: %8i' % count_nonzero(bool_MATCH & bool_Z & bool_VD)
 
-ax = figure().add_subplot(111)
-bins = arange(0., 1.01, 0.1)
-for k in ['probaE', 'probaEll', 'probaS0']:
-    n, bins, patches = ax.hist(master[k][bool_MATCH], histtype='step', bins=bins, label='%s' % k)
+def plotProbMorph_matched():
+    """ probability of morph types for all matched galaxies"""
+    ax = figure().add_axes([0.15,0.15,0.8,0.8])
+    bins = arange(0., 1.01, 0.1)
+    for k in ['probaE', 'probaEll', 'probaS0']:
+        n, bins, patches = ax.hist(
+                master[k][bool_MATCH & bool_Z],
+                histtype='step', bins=bins, label='%s' % k)
+    xlabel('prob')
+    ylabel('count')
+    legend()
+plotProbMorph_matched()
+savefig('sampleMatched_morph.png')
 
-bool_MATCH_reject = bool_MATCH & (master['probaEll'] < 0.2) & bool_Z
-bool_MATCH_select = bool_MATCH & (master['probaEll'] > 0.6) & bool_Z
+bool_MATCH_reject = bool_MATCH & (master['probaEll'] < 0.2) & bool_Z & bool_VD
+bool_MATCH_select = bool_MATCH & (master['probaEll'] > 0.6) & bool_Z & bool_VD
 
 print 'Ell < 0.2   : %8i' % count_nonzero(bool_MATCH_reject)
 print 'Ell > 0.6   : %8i' % count_nonzero(bool_MATCH_select)
@@ -75,7 +88,6 @@ print 'Ell > 0.6   : %8i' % count_nonzero(bool_MATCH_select)
 # Find commons
 print 'Ell < 0.2 common : %8i' % count_nonzero(bool_OKM_reject & bool_MATCH_reject)
 print 'Ell > 0.6 common : %8i' % count_nonzero(bool_OKM_select & bool_MATCH_select)
-
 
 
 # generate random selections
@@ -86,11 +98,11 @@ def randTrue(boolarr, size=10):
     return ind[sub]
 
 # names = ['IAUNAME', 'SUBIDR']
-
-subsize = 250
-names_sdss = ['Z_1', 'RA_1', 'DEC_1']
-names_nsa  = ['NSAID', 'SUBDIR', 'IAUNAME', 'PID', 'AID']
-names = names_sdss
-master[names][randTrue(bool_OK, size=subsize)].write('rand_RS.cat', format='ascii')
-master[names][randTrue(bool_MATCH_reject, size=subsize)].write('rand_probaEll_reject.cat', format='ascii')
-master[names][randTrue(bool_MATCH_select, size=subsize)].write('rand_probaEll_select.cat', format='ascii')
+if 0:
+    subsize = 250
+    names_sdss = ['Z_1', 'RA_1', 'DEC_1']
+    names_nsa  = ['NSAID', 'SUBDIR', 'IAUNAME', 'PID', 'AID']
+    names = names_sdss
+    master[names][randTrue(bool_OK, size=subsize)].write('rand_RS.cat', format='ascii')
+    master[names][randTrue(bool_MATCH_reject, size=subsize)].write('rand_probaEll_reject.cat', format='ascii')
+    master[names][randTrue(bool_MATCH_select, size=subsize)].write('rand_probaEll_select.cat', format='ascii')

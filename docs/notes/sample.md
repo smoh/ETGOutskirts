@@ -57,15 +57,21 @@ Use Bayesian Automated Classification given by Huertas-Company et al. 2011
 
 - match with HC+11 107,125
 - z < 0.05 88,912
-- 'reject' sample: probaEll < 0.2 28,191
-- 'select' sample: probaEll > 0.6 5407
+- VD > 70 km/s 39528
+- 'reject' sample: probaEll < 0.2 30829
+- 'select' sample: probaEll > 0.6 5104
 
 
 For visual inspection, randomly select 250 galaxies from
 
 - Sample 1 -- `rand_RS.cat`
+    * clearly contains too many non-elliptical galaxies (>50%)
 - Sample 2 reject -- `rand_probaEll_reject.cat`
+    * ellipticals: 0 0 0 0 0 0 0 1 1 0 (in chunks of 25 galaxies using SDSS skyserver image list)
+    * Practically no ellipticals are included.
 - Sample 2 select -- `rand_probaEll_select.cat`
+    * non-ellipticals: 4 5 4 4 5 11 6 2 3 6 ()
+    * contaminants: rings, bars, weak spiral structures, blue nuclear
 
 
 
