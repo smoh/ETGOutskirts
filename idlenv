@@ -1,0 +1,24 @@
+# workaround for zsh...
+shell_old=$shell
+export shell=bash
+export SHELL=bash
+#setup sloan stuff
+echo setup called
+source /u/dss/products/eups/bin/setups.sh
+setup -v idlutils
+setup -v photoop v1_9_11
+#setup -v idl
+#I think version 8_2 also works, so feel free to change the above
+# set the shell to original
+export shell=$shell_old
+
+#idl startup file
+export IDL_STARTUP='/u/semyeong/.idlstartup'
+
+#add base idl library
+export IDL_PATH=$IDL_DIR/lib:$IDL_PATH
+export IDL_PATH=$IDL_PATH:$IDL_DIR/examples
+export IDL_PATH=$IDL_PATH:+/u/semyeong/pro
+export IDL_DEVICE=X
+
+export IDL_PATH=$IDL_PATH:/u/semyeong/projects/bdfitter
