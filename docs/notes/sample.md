@@ -41,6 +41,7 @@ Construct a sample following similar procedures of Zhu et al. 2010
     + b/a from Stokes parameters at some radius
     + b/a from 2D Sersic fit <-- used
 ---> 22,378
+NOTE: By using 'VDISP > 70', I restricted the sample to those with VDISP measurement.
 
 Matched with Huertas-Company+11 (sep < 1 arcsec)
 
@@ -61,6 +62,8 @@ Use Bayesian Automated Classification given by Huertas-Company et al. 2011
 - 'reject' sample: probaEll < 0.2 30829
 - 'select' sample: probaEll > 0.6 5104
 
+NOTE: By using 'VDISP > 70', I restricted the sample to those with VDISP measurement.
+NOTE: The catalog of Huertas-Company+11 is based on SDSS DR7 spectroscopy catalog
 
 For visual inspection, randomly select 250 galaxies from
 
@@ -70,7 +73,7 @@ For visual inspection, randomly select 250 galaxies from
     * ellipticals: 0 0 0 0 0 0 0 1 1 0 (in chunks of 25 galaxies using SDSS skyserver image list)
     * Practically no ellipticals are included.
 - Sample 2 select -- `rand_probaEll_select.cat`
-    * non-ellipticals: 4 5 4 4 5 11 6 2 3 6 ()
+    * non-ellipticals: 4 5 4 4 5 11 6 2 3 6 --> 20 % contamination
     * contaminants: rings, bars, weak spiral structures, blue nuclear
 
 
