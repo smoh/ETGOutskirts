@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """ Script to download NSA deblend, ivar, and psf images """
 
 import urllib
@@ -27,8 +28,6 @@ def downloadfile(url, savename=None, prefix=None):
     mkdir_p(prefix)
     try:
         f = urlopen(url)
-        print "downloading " + url
-
         # Open our local file for writing
         with open(prefix + savename, "wb") as local_file:
             local_file.write(f.read())
@@ -57,15 +56,30 @@ def downloadNSA(subdir, iauname, pid, aid, prefix):
         downloadfile('http://sdss.physics.nyu.edu/mblanton/v0/detect/v0_1/%s/%s-%s-bpsf.fits.gz' % (subdir, iauname, band), prefix=prefix+'/psf/')
 
 
+def main():
+    import progressbar
+    import argparse
+    from astropy.table import Table
+    parser = argparse.ArgumentParser(description='Download NSA images')
+    parser.add_argument('catalog', type=str, help='catalog file (assumes NSA column names)')
+    parser.add_argument('--prefix', type=str, help='directory prefix',
+                        default='./')
+    args = parser.parse_args()
 
-#TODO: write argument parser if needed
+    # read master catalog
+    if args.catalog.endswith('.fits'):
+        master = Table.read(args.catalog)
+    else:
+        master = Table.read(args.catalog, format='ascii')
+    # check if all columns needed exist
+    for name in ['IAUNAME', 'SUBDIR', 'PID', 'AID']:
+        if not name in master.colnames:
+            raise 'Column %s not found' % name
+    progress = progressbar.ProgressBar()
+    for row in progress(master):
+        downloadNSA(row['SUBDIR'], row['IAUNAME'], row['PID'], row['AID'], args.prefix)
 
 
 if __name__ == '__main__':
-
-    subdir = '01h/p32/J011058.90+330907.9'
-    iauname = 'J011058.90+330907.9'
-    pid = '92'
-    aid = '0'
-    downloadNSA(subdir, iauname, pid, aid, 'bdfitter_testrun')
+    main()
 
