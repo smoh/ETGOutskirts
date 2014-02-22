@@ -76,6 +76,38 @@ For visual inspection, randomly select 250 galaxies from
     * non-ellipticals: 4 5 4 4 5 11 6 2 3 6 --> 20 % contamination
     * contaminants: rings, bars, weak spiral structures, blue nuclear
 
+NOTE on catalog:
+    - VDISP values are not always from SDSS even in case the value exists in SDSS source catalog
+    - The master catalog does not contain error on VDISP
+
+
+* * * 
+
+2013-02-14
+
+Use Bayesian Automated Classification given by Huertas-Company et al. 2011
+
+NSA All: 145,155
+SampleZ: z < 0.05 123,396
+hasMorph: matched with HC11 123,396 (sep < 1 arcsec, 90% within 0.4 arcsec)
+SampleZM: z < 0.05 & has morph 88,912
+SampleZMprobaEll: probaEll > 0.7 3861
+
+* The entire SampleZM shows bimodal distribution of probability of being E/S0 or Elliptical,
+with most of them below 0.2, and another peak around ~0.8-0.9. Note also that in testing
+their classification with visually classified sample of Nair & Abraham 2010, they find
+those visually classified as ellipticals have probaEll distribution peaked at ~0.8.
+* One key concern in using Huertas+Company morphology catalog is since they base their
+catalog on SDSS DR7 spectroscopy catalog, we may be biased against low-redshift, bright
+galaxies(upper left corner of redshift versus $M_r$ plot).
+* Elliptical galaxies selected with probaEll > 0.7 threshold ranges velocity dispersion
+from 50-300 km/s, $M_r$ from -17 to -23, and effective radius from 1 to 20 arcsec (1 to 20 kpc).
+
+
+SampleZMprobaEllSub: ($0 % 100 == 1 & _7 & Z_1>0.02) | ($0 % 4 == 0 & _7 & Z_1<0.02)
+(7 = SampleZMprobaEll)
+
+Subsample of N=75 with reasonable ranges in $M_r$, R_eff, and VDISP saved as SampleZMprobaEllsub.fits
 
 
 * * *
@@ -87,7 +119,7 @@ two main reasons:
 
     1) It complements bright nearby galaxies that may be in SDSS imaging footprint, but
     are eliminated due to difficulties in reduction (is this correct?), and adopts
-    higher threshold for distriminating stars from galaxies.
+    higher threshold for discriminating stars from galaxies.
     2) The catalog provides SDSS images with improved sky subtraction (cite), which is
     crucial in our analysis of faint outskirts of elliptical galaxies.
 

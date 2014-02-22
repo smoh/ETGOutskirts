@@ -1,0 +1,22 @@
+#!/usr/bin/env python
+
+""" Script to select from sample given visual inspection info """
+
+from astropy.table import Table
+import argparse
+import os
+
+def select_visual(mastername, visualname):
+    master = Table.read(mastername, format='fits' if mastername.endswith('.fits') else 'ascii')
+    visual = Table.read(visualname, format='ascii')
+    if len(visual.colnames) != 1:
+        raise '%s catalog has multiple columns' % (visualname)
+    master[visual[visual.colnames[0]] == 1].write(
+        os.path.splitext(mastername)[0]+'_visual.fits', format='fits')
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('master', type=str, help="catalog to select from")
+    parser.add_argument('visual', type=str, help="one-column file with visual info (1=good)")
+    args = parser.parse_args()
+    select_visual(args.master, args.visual)
