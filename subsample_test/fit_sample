@@ -1,0 +1,37 @@
+#!/usr/bin/env python
+
+import argparse
+from subprocess import call
+
+def mkdir_p(path):
+    import os, errno
+    try:
+        os.makedirs(path)
+    except OSError as exc:
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else: raise
+
+
+parser = argparse.ArgumentParser(description='run fit_sample on input file')
+parser.add_argument('input', help='input fits table')
+parser.add_argument('start', help='zero-based starting index', type=int)
+parser.add_argument('end', help='zero-based end index', type=int)
+parser.add_argument('outdir', help='output directory')
+parser.add_argument('datadir', help='data directory')
+parser.add_argument('--res', help='store model images', action='store_true')
+args = parser.parse_args()
+
+profile_name = args.input.split('.fits')[-2].split('input_')[-1]
+mkdir_p(args.outdir)
+if args.res:
+    mkdir_p(args.outdir + '/models')
+res_str = '/residuals' if args.res else ''
+profiles_str = '{' + '%s' % (profile_name) + ':8}'
+
+idl_command = "fit_sample, '{:s}', {:d}, {:d}, '{:s}', '{:s}', {:s}, profiles={:s}".format(
+    args.input, args.start, args.end, args.outdir+'/', args.datadir+'/', res_str, profiles_str)
+
+print idl_command
+
+call(["idl", "-e", idl_command])
