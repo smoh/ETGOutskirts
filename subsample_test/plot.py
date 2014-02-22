@@ -27,26 +27,75 @@ pind = {
 }
 pname = {v:k for k, v in pind.items()}
 
-class Parameters(object):
+
+class AttrDict(dict):
+    def __init__(self, *args, **kwargs):
+        super(AttrDict, self).__init__(*args, **kwargs)
+        self.__dict__ = self
+
+
+class Parameters(AttrDict):
     """ single Sersic profile parameters"""
     def __init__(self, param):
-       self.Ie = param[0]
-       self.Re = param[1]
-       self.N = param[2]
-       self.ab = param[3]
-       self.shape = param[4]
-       self.xc = param[5]
-       self.yc = param[6]
-       self.posang = param[7]
+        d = {}
+        d['Ie'] = param[0]
+        d['Re'] = param[1]
+        d['N'] = param[2]
+        d['ba'] = param[3]
+        d['shape'] = param[4]
+        d['xc'] = param[5]
+        d['yc'] = param[6]
+        d['posang'] = param[7]
+        AttrDict.__init__(self, d)
+
+    def __str__(self):
+        info = []
+        info.append('%12s = %10.6f' % ('Ie', self.Ie))
+        info.append('%12s = %10.6f' % ('Re', self.Re))
+        info.append('%12s = %10.6f' % ('N', self.N))
+        info.append('%12s = %10.6f' % ('ba', self.ba))
+        info.append('%12s = %10.6f' % ('xc', self.xc))
+        info.append('%12s = %10.6f' % ('yc', self.yc))
+        info.append('%12s = %10.6f' % ('posang', self.posang))
+        return '\n'.join(info)
+
+    def __repr__(self):
+        return self.__str__()
+
+
+def showim(ax, image):
+    from asinh_norm import AsinhNorm
+
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    divider = make_axes_locatable(ax)
+    ax_cb = divider.append_axes("bottom", size="5%", pad=0.05)
+    fig1 = ax.get_figure()
+    fig1.add_axes(ax_cb)
+
+    vmin = min([min(r) for r in image])
+    im = ax.imshow(image, cmap=cm.gray_r, 
+            norm=matplotlib.colors.LogNorm(),
+            #interpolation='nearest',
+            aspect='auto')
+    ax.xaxis.tick_top()
+    try:
+        cb = colorbar(im, cax=ax_cb, orientation='horizontal')
+        ax_cb.xaxis.tick_bottom()
+        return ax, cb
+    except:
+        pass
+
+    
+
 
 outdir = './plots'
 datadir = './data'
-modeldir = './out_SER/models'
-inputt = Table.read('input_SER.fits')
-result = Table.read('./out_SER/RAWFIT00000.00050.fits')
+modeldir = './out_SER2/models'
+inputt = Table.read('SampleZMprobaEllSub_visual.fits')
+result = Table.read('./out_SER2/RAWFIT00000.00004.fits')
 
 # for index in arange(20, 30):
-for index in [20]:
+for index in arange(0, 5):
     profile = 'SER'
 
     # load images
@@ -57,79 +106,69 @@ for index in [20]:
     data  = fits.getdata(imagefits, ext=2)  # r-band
     residual = data - model
 
-    if 0:
-        fig = figure(figsize=(10, 4))
-        fig.suptitle('%3i %s' % (index, result[index]['NAME']))
-        ax1 = fig.add_subplot(1,3,1)
-        ax1.set_title('data')
-        ax1.imshow(data)
-        ax2 = fig.add_subplot(1,3,2)
-        ax2.set_title('model')
-        ax2.imshow(model)
-        fig.add_subplot(1,3,3)
-        title('residual')
-        imshow(residual)
-        # colorbar()
-        tight_layout()
-
     iauname = result[index]['NAME']
+    z = inputt[index]['Z_1']
     param_init = Parameters(result[index]['%s_VAL' % profile])
     param_fit  = Parameters(result[index]['FIT_%s' % profile])
-    xw0, yw0
+
+    # crop images
+    # halfsize = param_init.Re * 3
+    # data = data[param_init.yc-halfsize:param_init.yc+halfsize,
+    #         param_init.xc-halfsize:param_init.xc+halfsize]
+    # model = model[param_init.yc-halfsize:param_init.yc+halfsize,
+    #                 param_init.xc-halfsize:param_init.xc+halfsize]
+    # residual = residual[param_init.yc-halfsize:param_init.yc+halfsize,
+    #                 param_init.xc-halfsize:param_init.xc+halfsize]
 
     # use aplpy
-    fig = figure(figsize=(12, 5))
-    fig.suptitle('%3i %s' % (index, iauname))
+    fig = figure(figsize=(14, 5))
+    fig.suptitle('%3i %s %6.4f' % (index, iauname, z))
+
+    transData2Axes = lambda ax, p: ax.transAxes.inverted().transform(ax.transData.transform(p))
 
     vmin = min([min(r) for r in data])
     vmax = max([max(r) for r in data])
     vmid = vmax/2.
 
     # data image
-    f1 = aplpy.FITSFigure(imagefits, hdu=2, figure=fig, subplot=[0.05,0.2,0.3,0.7])
-    f1.show_grayscale(stretch='arcsinh')
-    f1.axis_labels.hide()
-    f1.tick_labels.hide()
+    ax1 = fig.add_subplot(1,3,1)
+    ax1.text(0.5, 1.1, 'data', ha='center', va='bottom', transform=ax1.transAxes)
+    showim(ax1, data)
     # add initial and best-fit center
-    f1.show_markers(*f1.pixel2world(param_fit.xc, param_fit.yc),
-                    edgecolor='r', facecolor='r', lw=1)
-    f1.show_markers(*f1.pixel2world(param_init.xc, param_init.yc),
-                    edgecolor='c', facecolor='c', lw=1)
+    ax1.axvline(param_init.xc, c='c')
+    ax1.axhline(param_init.yc, c='c')
+    ax1.axvline(param_fit.xc, c='m')
+    ax1.axhline(param_fit.yc, c='m')
     # add initial effective radius ellipse
-    f1.show_ellipses(
-            param_init.xc, param_init.yc, param_init.Re*2, param_init.Re*2./param_init.ab,
-            angle=rad2deg(param_init.posang))
+    from matplotlib.patches import Ellipse
+    e = Ellipse(xy=(param_init.xc, param_init.yc), width=2*param_init.Re,
+                    height=2*param_init.Re/param_init.ba, angle=rad2deg(param_init.posang)+90.,
+                    fc='None', ec='c')
+    e2 = Ellipse(xy=(param_fit.xc, param_fit.yc), width=2*param_fit.Re,
+                    height=2*param_fit.Re/param_fit.ba, angle=rad2deg(param_fit.posang)+90.,
+                    fc='None', ec='m')
+    ax1.add_artist(e)
+    ax1.add_artist(e2)
 
     # best-fit model
-    f2 = aplpy.FITSFigure(modelfits, hdu=0, figure=fig, subplot=[0.36,0.2,0.3,0.7])
-    f2.show_grayscale(stretch='arcsinh')
-    f2.axis_labels.hide()
-    f2.tick_labels.hide()
+    ax2 = fig.add_subplot(1,3,2, sharex=ax1, sharey=ax1)
+    ax2.text(0.5, 1.1, 'model', ha='center', va='bottom', transform=ax2.transAxes)
+    showim(ax2, model)
     # add initial and best-fit center
-    f2.show_markers(*f2.pixel2world(param_fit.xc, param_fit.yc),
-                    edgecolor='r', facecolor='r', lw=1)
-    f2.show_markers(*f2.pixel2world(param_init.xc, param_init.yc),
-                    edgecolor='c', facecolor='c', lw=1)
-    # add model effective radius ellipse
-    f2.show_ellipses(
-            param_fit.xc, param_fit.yc, param_fit.Re*2, param_fit.Re*2*param_fit.ab,
-            angle=rad2deg(param_fit.posang))
+    ax2.axvline(param_fit.xc, c='m')
+    ax2.axhline(param_fit.yc, c='m')
 
     # residual image
-    f3 = aplpy.FITSFigure(residual, figure=fig, subplot=[0.67,0.2,0.3,0.7])
-    f3.show_grayscale()
-    f3.axis_labels.hide()
-    f3.tick_labels.hide()
+    ax3 = fig.add_subplot(1,3,3, sharex=ax1, sharey=ax1)
+    ax3.text(0.5, 1.1, 'residual', ha='center', va='bottom', transform=ax3.transAxes)
+    showim(ax3, residual)
 
-    # info = []
-    # for i, p in enumerate(result[index]['FIT_%s' % profile]):
-    #     fixed = '*' if result[index]['%s_FIX' % profile][i] else ''
-    #     info.append(fixed + '%s = %f' % (pname[i], p))
-    # info = []
-    # info_str = ' '.join(info[:4]) + '\n' + ' '.join(info[4:])
-    # figtext(0.5, 0.08, info_str, va='center', ha='center')
+    
+    figtext(0.95, 0.81, '%r' % param_fit, va='top', ha='right',
+            family='monospace')
 
-    show()
-    raw_input()
+    tight_layout(rect=(0.01,0.1,0.814,0.9))
+    # show()
+    fig.savefig('out_SER2/%s.png' % iauname)
     
 
