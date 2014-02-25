@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+</head>
+<body>
+<table border="1">
+    {% for row in table %}
+    <tr>
+        <td>
+            <table>
+                
+                <tr>
+                    <td>NAME:</td>
+                    <td>{{ row['NAME'] }}</td>
+                </tr>
+                <tr>
+                    <td>REFF:</td>
+                    <td>{{ row['FIT_SER'][1] }}</td>
+                </tr>
+                
+            </table>
+        </td>
+        <td><img src="./out/{{ row['NAME'] }}.png"></td>
+    </tr>
+    {% endfor %}
+</table>
+</body>
+</html>
