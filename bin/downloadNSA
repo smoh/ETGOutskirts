@@ -29,7 +29,7 @@ def downloadfile(url, savename=None, prefix=None):
     try:
         f = urlopen(url)
         # Open our local file for writing
-        with open(prefix + savename, "wb") as local_file:
+        with open(prefix +'/'+ savename, "wb") as local_file:
             local_file.write(f.read())
             local_file.close()
 
@@ -46,12 +46,13 @@ def downloadNSA(subdir, iauname, pid, aid, prefix):
     """
     #TODO: add PSF images
 
-    url = 'http://sdss.physics.nyu.edu/mblanton/v0/detect/v0_1/%s/atlases/%s/' % (subdir, pid)
-    child = '%s-%s-atlas-%s.fits.gz' % (iauname, pid, aid)
-    parent = '%s-parent-%s.fits.gz' % (iauname, pid)
+    url = 'http://sdss.physics.nyu.edu/mblanton/v0/detect/v0_1/%s/' % (subdir)
 
-    for f, sub in zip([child, parent], ['images/', 'ivar/']):
-        downloadfile(url+f, prefix=prefix + '/' + sub)
+    downloadfile(url + 'atlases/%s/%s-%s-atlas-%s.fits.gz' % (
+        pid, iauname, pid, aid), prefix=prefix + '/images')
+    downloadfile(url + 'parents/%s-parent-%s.fits.gz' % (
+        iauname, pid), prefix=prefix + '/ivar')
+
     for band in ['u', 'g', 'r', 'i', 'z', 'fd','nd']:
         downloadfile('http://sdss.physics.nyu.edu/mblanton/v0/detect/v0_1/%s/%s-%s-bpsf.fits.gz' % (subdir, iauname, band), prefix=prefix+'/psf/')
 
