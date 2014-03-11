@@ -9,3 +9,10 @@
 - the main dependency of the whole code is idlutils.. but maybe others, too.
 - Let's start with a small sample of 10-50 that covers a range of redshift, sigma, $M_r$, $R_e$
 
+2014-03-06 Jenny
+
+In any case, we need to infer size from dispersion. Try two things:
+1. sigma --(Faber-Jackson relation)--> L --(Kormendy relation)--> size
+2. define our own size-velocity dispersion relation using SDSS deVac model mag (see van der Wel et al. 2008 -- large scatter): median / some smaller size constraint for compact objects
+
+
