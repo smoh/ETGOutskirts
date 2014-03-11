@@ -85,90 +85,111 @@ def showim(ax, image):
     except:
         pass
 
-    
+
+def main():
+    """
+    Save image/model/residual plots
+    """
+    import argparse
+    parser = argparse.ArgumentParser(
+                description="""Save image/model/residual plots""")
+    parser.add_argument("input", type=str, help="part of NSA catalog")
+    parser.add_argument("result", type=str, help="fit result table RAWXXX")
+    parser.add_argument("profile", type=str, help="name of profile")
+    parser.add_argument("datadir", type=str, help="data directory")
+    parser.add_argument("modeldir", type=str, help="model image directory")
+    parser.add_argument("outdir", type=str, help="output directory")
+    parser.add_argument("-r", "--range", nargs='+', type=int,
+                        help="zero-based range of row index, e.g., -r 0 5")
+    args = parser.parse_args()
+
+    inputt = Table.read(args.input)
+    result = Table.read(args.result)
+    datadir, modeldir, profile, outdir = args.datadir, args.modeldir, \
+            args.profile, args.outdir
+    row_start = args.range[0] if args.range else 0
+    row_end = args.range[1] if args.range else len(inputt) + 1
+
+    for index in range(row_start, row_end):
+
+        # load images
+        imagefits = datadir+'/images/%s-%i-atlas-%i.fits.gz' % (
+                result[index]['NAME'], result[index]['PARENT_ID'], result[index]['ATLAS_ID'])
+        modelfits = modeldir+'/M%s.fits' % (result[index]['NAME'])
+        model = fits.getdata(modelfits, ext=0)
+        data  = fits.getdata(imagefits, ext=2)  # r-band
+        residual = data - model
+
+        # galaxy info
+        nsaid = inputt[index]['NSAID']
+        iauname = result[index]['NAME']
+        z = inputt[index]['Z_1']
+        param_init = Parameters(result[index]['%s_VAL' % profile])
+        param_fit  = Parameters(result[index]['FIT_%s' % profile])
+
+        # crop images
+        # halfsize = param_init.Re * 3
+        # data = data[param_init.yc-halfsize:param_init.yc+halfsize,
+        #         param_init.xc-halfsize:param_init.xc+halfsize]
+        # model = model[param_init.yc-halfsize:param_init.yc+halfsize,
+        #                 param_init.xc-halfsize:param_init.xc+halfsize]
+        # residual = residual[param_init.yc-halfsize:param_init.yc+halfsize,
+        #                 param_init.xc-halfsize:param_init.xc+halfsize]
+
+        fig = figure(figsize=(14, 5))
+        fig.suptitle('%3i NSAID %6i %s %6.4f' % (index, nsaid, iauname, z))
+
+        transData2Axes = lambda ax, p: ax.transAxes.inverted().transform(ax.transData.transform(p))
+
+        vmin = min([min(r) for r in data])
+        vmax = max([max(r) for r in data])
+        vmid = vmax/2.
+
+        def add_effective_ellipse(ax):
+            from matplotlib.patches import Ellipse
+            e = Ellipse(xy=(param_init.xc, param_init.yc), width=2*param_init.Re,
+                            height=2*param_init.Re/param_init.ba, angle=rad2deg(param_init.posang)+90.,
+                            fc='None', ec='c')
+            e2 = Ellipse(xy=(param_fit.xc, param_fit.yc), width=2*param_fit.Re,
+                            height=2*param_fit.Re/param_fit.ba, angle=rad2deg(param_fit.posang)+90.,
+                            fc='None', ec='c')
+            # ax.add_artist(e)
+            ax.add_artist(e2)
+
+        # data image
+        ax1 = fig.add_subplot(1,3,1)
+        ax1.text(0.5, 1.1, 'data', ha='center', va='bottom', transform=ax1.transAxes)
+        showim(ax1, data)
+        if 0:
+            # add initial and best-fit center crosshair
+            ax1.axvline(param_init.xc, c='c')
+            ax1.axhline(param_init.yc, c='c')
+            ax1.axvline(param_fit.xc, c='m')
+            ax1.axhline(param_fit.yc, c='m')
+        add_effective_ellipse(ax1)
+
+        # best-fit model
+        ax2 = fig.add_subplot(1,3,2, sharex=ax1, sharey=ax1)
+        ax2 = fig.add_subplot(1,3,2, sharex=ax1, sharey=ax1)
+        ax2.text(0.5, 1.1, 'model', ha='center', va='bottom', transform=ax2.transAxes)
+        showim(ax2, model)
+        add_effective_ellipse(ax2)
+
+        # residual image
+        ax3 = fig.add_subplot(1,3,3, sharex=ax1, sharey=ax1)
+        ax3.text(0.5, 1.1, 'residual', ha='center', va='bottom', transform=ax3.transAxes)
+        showim(ax3, residual)
+        add_effective_ellipse(ax3)
+
+        
+        # figtext(0.95, 0.81, '%r' % param_fit, va='top', ha='right',
+        #         family='monospace')
+
+        subplots_adjust(left=0.05, right=0.95, top=0.80, bottom=0.1)
+        # tight_layout(rect=(0.01,0.1,0.814,0.9))
+        fig.savefig(outdir + '/%s.png' % (iauname))
+        close()
 
 
-outdir = './plots'
-datadir = './data'
-modeldir = './out_SER2/models'
-inputt = Table.read('SampleZMprobaEllSub_visual.fits')
-result = Table.read('./out_SER2/RAWFIT00000.00004.fits')
-
-# for index in arange(20, 30):
-for index in arange(0, 5):
-    profile = 'SER'
-
-    # load images
-    imagefits = datadir+'/images/%s-%i-atlas-%i.fits.gz' % (
-            result[index]['NAME'], result[index]['PARENT_ID'], result[index]['ATLAS_ID'])
-    modelfits = modeldir+'/M%s.fits' % (result[index]['NAME'])
-    model = fits.getdata(modelfits, ext=0)
-    data  = fits.getdata(imagefits, ext=2)  # r-band
-    residual = data - model
-
-    iauname = result[index]['NAME']
-    z = inputt[index]['Z_1']
-    param_init = Parameters(result[index]['%s_VAL' % profile])
-    param_fit  = Parameters(result[index]['FIT_%s' % profile])
-
-    # crop images
-    # halfsize = param_init.Re * 3
-    # data = data[param_init.yc-halfsize:param_init.yc+halfsize,
-    #         param_init.xc-halfsize:param_init.xc+halfsize]
-    # model = model[param_init.yc-halfsize:param_init.yc+halfsize,
-    #                 param_init.xc-halfsize:param_init.xc+halfsize]
-    # residual = residual[param_init.yc-halfsize:param_init.yc+halfsize,
-    #                 param_init.xc-halfsize:param_init.xc+halfsize]
-
-    # use aplpy
-    fig = figure(figsize=(14, 5))
-    fig.suptitle('%3i %s %6.4f' % (index, iauname, z))
-
-    transData2Axes = lambda ax, p: ax.transAxes.inverted().transform(ax.transData.transform(p))
-
-    vmin = min([min(r) for r in data])
-    vmax = max([max(r) for r in data])
-    vmid = vmax/2.
-
-    # data image
-    ax1 = fig.add_subplot(1,3,1)
-    ax1.text(0.5, 1.1, 'data', ha='center', va='bottom', transform=ax1.transAxes)
-    showim(ax1, data)
-    # add initial and best-fit center
-    ax1.axvline(param_init.xc, c='c')
-    ax1.axhline(param_init.yc, c='c')
-    ax1.axvline(param_fit.xc, c='m')
-    ax1.axhline(param_fit.yc, c='m')
-    # add initial effective radius ellipse
-    from matplotlib.patches import Ellipse
-    e = Ellipse(xy=(param_init.xc, param_init.yc), width=2*param_init.Re,
-                    height=2*param_init.Re/param_init.ba, angle=rad2deg(param_init.posang)+90.,
-                    fc='None', ec='c')
-    e2 = Ellipse(xy=(param_fit.xc, param_fit.yc), width=2*param_fit.Re,
-                    height=2*param_fit.Re/param_fit.ba, angle=rad2deg(param_fit.posang)+90.,
-                    fc='None', ec='m')
-    ax1.add_artist(e)
-    ax1.add_artist(e2)
-
-    # best-fit model
-    ax2 = fig.add_subplot(1,3,2, sharex=ax1, sharey=ax1)
-    ax2.text(0.5, 1.1, 'model', ha='center', va='bottom', transform=ax2.transAxes)
-    showim(ax2, model)
-    # add initial and best-fit center
-    ax2.axvline(param_fit.xc, c='m')
-    ax2.axhline(param_fit.yc, c='m')
-
-    # residual image
-    ax3 = fig.add_subplot(1,3,3, sharex=ax1, sharey=ax1)
-    ax3.text(0.5, 1.1, 'residual', ha='center', va='bottom', transform=ax3.transAxes)
-    showim(ax3, residual)
-
-    
-    figtext(0.95, 0.81, '%r' % param_fit, va='top', ha='right',
-            family='monospace')
-
-    tight_layout(rect=(0.01,0.1,0.814,0.9))
-    # show()
-    fig.savefig('out_SER2/%s.png' % iauname)
-    
-
+if __name__ == '__main__':
+    main()
