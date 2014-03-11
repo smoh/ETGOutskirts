@@ -36,8 +36,51 @@ pind = {
     'posang': 7,
 }
 
-def make_input_DVC():
-    """ generate input table for single De Vauc profile """
+def single_DVC():
+    """
+    generate input table for single De Vauc profile
+
+    inputtable : str
+        input table name; should be part of NSA catalog in FITS format
+    outname : str
+        output table name
+    """
+    # this will be arguments at some point
+    input = 'SampleZMprobaEllSub_visual.fits'
+    outname = 'single_DVC/input_DVC.fits'
+
+    master = Table.read(input)
+    # default entries
+    table = master['IAUNAME', 'PID', 'AID'].copy()
+    # change names for bdfitter
+    table['IAUNAME'].name = 'NAME'
+    table['PID'].name = 'PARENT_ID'
+    table['AID'].name = 'ATLAS_ID'
+
+    Nrows = len(master)
+    DVC_VAL = Column(
+            name='DVC_VAL',
+            data=array([[1, 10, 4, 0.7, 0, 0, 0, 0]]*Nrows).astype(float))
+    DVC_FIX = Column(
+            name='DVC_FIX',
+            data=array([[0, 0, 1, 0, 1, 0, 0, 0]]*Nrows))
+    table.add_columns([DVC_VAL, DVC_FIX])
+
+    table['DVC_VAL'][:,pind['posang']] = deg2rad((master['SERSIC_PHI'].data + 90.) % 360.)
+    table['DVC_VAL'][:,pind['ratio']] = master['SERSIC_BA'].data
+    table['DVC_VAL'][:,pind['Reff']] = master['SERSIC_TH50'].data / 0.396
+    table['DVC_VAL'][:,pind['center_x']] = master['XCEN'].data
+    table['DVC_VAL'][:,pind['center_y']] = master['YCEN'].data
+
+    table.write(outname)
+
+
+def make_input_two():
+    """
+    Generate input table for de Vauc + Sersic
+    """
+    from astropy import cosmology
+    cosmo = cosmology.FlatLambdaCDM(70., 0.3)
     master = Table.read('SampleZMprobaEllSub_visual.fits')
 
     # default entries
@@ -48,22 +91,43 @@ def make_input_DVC():
     table['AID'].name = 'ATLAS_ID'
 
     Nrows = len(master)
-    SER_VAL = Column(
-            name='SER_VAL',
+    DVC_VAL = Column(
+            name='DVC_VAL',
             data=array([[1, 10, 4, 0.7, 0, 0, 0, 0]]*Nrows).astype(float))
-    SER_FIX = Column(
-            name='SER_FIX',
-            data=array([[0, 0, 0, 0, 1, 0, 0, 0]]*Nrows))
-    table.add_columns([SER_VAL, SER_FIX])
+    DVC_FIX = Column(
+            name='DVC_FIX',
+            data=array([[0, 1, 1, 0, 1, 0, 0, 0]]*Nrows))
+    # SER_VAL = Column(
+    #         name='SER_VAL',
+    #         data=array([[1, 10, 4, 0.7, 0, 0, 0, 0]]*Nrows).astype(float))
+    # SER_FIX = Column(
+    #         name='SER_FIX',
+    #         data=array([[0, 0, 1, 0, 1, 0, 0, 0]]*Nrows))
+    table.add_columns([DVC_VAL, DVC_FIX])
 
-    table['SER_VAL'][:,pind['posang']] = deg2rad(master['SERSIC_PHI'].data + 90.)
-    table['SER_VAL'][:,pind['ratio']] = master['SERSIC_BA'].data
-    table['SER_VAL'][:,pind['Reff']] = master['SERSIC_TH50'].data / 0.396
-    table['SER_VAL'][:,pind['center_x']] = master['XCEN'].data
-    table['SER_VAL'][:,pind['center_y']] = master['YCEN'].data
+    # posang
+    table['DVC_VAL'][:, 7] = deg2rad((master['SERSIC_PHI'].data + 90.) % 360.)
+    # centers
+    table['DVC_VAL'][:,5] = master['XCEN'].data
+    table['DVC_VAL'][:,6] = master['YCEN'].data
+    # q_ba
+    table['DVC_VAL'][:,3] = master['SERSIC_BA'].data
+
+    
+    # size using FP of Bernardi+03 and Petrosian mag
+    petroflux = master['PETROFLUX'][:,4] * 3.631e-6   # Jy
+    sigma = master['VDISP'] 
+    L = petroflux * 4. * pi * (cosmo.luminosity_distance(master['Z_1']).value)  # erg/s/Hz
+    log_R0_kpc = -2.34*log10(sigma) + 1.5*log10(L) + 15.592
+    R0_pixels = 10**log_R0_kpc / (cosmo.angular_diameter_distance(master['Z_1']).value * 1000) \
+                / 206265. / 0.396  # circularized effective radius in pixels
+    table['DVC_VAL'][:,1] = R0_pixels
+
+    table.write('input_DVC.fits')
+
     
 
-    table.write('input_SER.fits')
+
 
 def main():
     parser = argparse.ArgumentParser(description="Make input FITS table for bdfitter")    
@@ -171,5 +235,4 @@ def main():
 
 
 if __name__=='__main__':
-   make_input_DVC() 
-    
+    single_DVC()
