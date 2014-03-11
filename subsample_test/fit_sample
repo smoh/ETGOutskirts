@@ -20,6 +20,7 @@ parser.add_argument('end', help='zero-based end index', type=int)
 parser.add_argument('outdir', help='output directory')
 parser.add_argument('datadir', help='data directory')
 parser.add_argument('--res', help='store model images', action='store_true')
+parser.add_argument('--debug', help='run in debug mode', action='store_true')
 args = parser.parse_args()
 
 profile_name = args.input.split('.fits')[-2].split('input_')[-1]
@@ -27,10 +28,11 @@ mkdir_p(args.outdir)
 if args.res:
     mkdir_p(args.outdir + '/models')
 res_str = '/residuals' if args.res else ''
+debug_str = '/debug' if args.debug else ''
 profiles_str = '{' + '%s' % (profile_name) + ':8}'
 
-idl_command = "fit_sample, '{:s}', {:d}, {:d}, '{:s}', '{:s}', {:s}, profiles={:s}".format(
-    args.input, args.start, args.end, args.outdir+'/', args.datadir+'/', res_str, profiles_str)
+idl_command = "fit_sample, '{:s}', {:d}, {:d}, '{:s}', '{:s}', {:s}, {:s}, profiles={:s}".format(
+    args.input, args.start, args.end+1, args.outdir+'/', args.datadir+'/', res_str, debug_str, profiles_str)
 
 print idl_command
 
