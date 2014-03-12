@@ -108,7 +108,7 @@ def main():
     datadir, modeldir, profile, outdir = args.datadir, args.modeldir, \
             args.profile, args.outdir
     row_start = args.range[0] if args.range else 0
-    row_end = args.range[1] if args.range else len(inputt) + 1
+    row_end = args.range[1] + 1 if args.range else len(inputt)
 
     for index in range(row_start, row_end):
 
