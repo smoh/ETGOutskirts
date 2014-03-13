@@ -59,7 +59,7 @@ template = jinja2.Template(
         </td>
         <td>
             <img width="80%" src="{{ '%s' % (plotdir) }}/{{ row['NAME'] }}.png">
-            <img src="http://skyservice.pha.jhu.edu/DR9/ImgCutout/getjpeg.aspx?ra={{radec[loop.index0][0]}}&dec={{radec[loop.index0][1]}}">
+            <a href="http://skyserver.sdss3.org/dr9/en/tools/chart/navi.asp?ra={{radec[loop.index0][0]}}&dec={{radec[loop.index0][1]}}" target="_blank"> <img src="http://skyservice.pha.jhu.edu/DR9/ImgCutout/getjpeg.aspx?ra={{radec[loop.index0][0]}}&dec={{radec[loop.index0][1]}}">
         </td>
     </tr>
     {% endfor %}
