@@ -40,11 +40,21 @@ def downloadfile(url, savename=None, prefix=None):
         print "URL Error:", e.reason, url
 
 
+def download_sdss_psffile(run, rerun, camcol, field, prefix):
+    """download sdss psf metadata file"""
+    url = 'http://data.sdss3.org/sas/dr10/boss/photo/redux/%i/%i/objcs/%i/psField-%6i-%i-%4i.fit' % (rerun, run, camcol, run, camcol, field)
+    downloadfile(url, prefix=prefix)
+    
+
 def downloadNSA(subdir, iauname, pid, aid, prefix):
     """
-    Download NSA child, parent, and psf images
+    Download NSA child, parent, and psf images to be used in bdfitter
+    Saved as
+    prefix/
+        images/ -- child images
+        ivar/ -- parent images
+        psf/ -- psf images
     """
-    #TODO: add PSF images
 
     url = 'http://sdss.physics.nyu.edu/mblanton/v0/detect/v0_1/%s/' % (subdir)
 
@@ -57,30 +67,50 @@ def downloadNSA(subdir, iauname, pid, aid, prefix):
         downloadfile('http://sdss.physics.nyu.edu/mblanton/v0/detect/v0_1/%s/%s-%s-bpsf.fits.gz' % (subdir, iauname, band), prefix=prefix+'/psf/')
 
 
-def main():
-    import progressbar
-    import argparse
-    from astropy.table import Table
-    parser = argparse.ArgumentParser(description='Download NSA images')
-    parser.add_argument('catalog', type=str, help='catalog file (assumes NSA column names)')
-    parser.add_argument('--prefix', type=str, help='directory prefix',
-                        default='./')
-    args = parser.parse_args()
+def downloadNSACatalog(catalog, prefix):
+    """
+    Download all galaxy images in the catalog
 
-    # read master catalog
-    if args.catalog.endswith('.fits'):
-        master = Table.read(args.catalog)
+    catalog : FITS or ascii catalog filename
+    prefix : directory to save images
+    """
+    from astropy.table import Table
+    if catalog.endswith('.fits'):
+        master = Table.read(catalog)
     else:
-        master = Table.read(args.catalog, format='ascii')
+        master = Table.read(catalog, format='ascii')
     # check if all columns needed exist
     for name in ['IAUNAME', 'SUBDIR', 'PID', 'AID']:
         if not name in master.colnames:
             raise 'Column %s not found' % name
+    import progressbar
     progress = progressbar.ProgressBar()
     for row in progress(master):
         downloadNSA(row['SUBDIR'], row['IAUNAME'], row['PID'], row['AID'], args.prefix)
 
 
 if __name__ == '__main__':
-    main()
+
+    import argparse, inspect
+    from argparse import RawTextHelpFormatter
+    parser = argparse.ArgumentParser(description='Download NSA/SDSS images', formatter_class=RawTextHelpFormatter)
+    subparsers = parser.add_subparsers(title='commands')
+
+    for cmdname, func in zip(['cat', 'psf'], [downloadNSACatalog, download_sdss_psffile]):
+        temppar = subparsers.add_parser(cmdname, description=func.__doc__, formatter_class=RawTextHelpFormatter)
+        temppar.set_defaults(func=func)
+        for argname in inspect.getargspec(func).args:
+            temppar.add_argument(argname) #, help=argparse.SUPPRESS)
+
+    # parser_cat = subparsers.add_parser('nsa', description=downloadNSACatalog.__doc__)
+    # parser_cat.set_defaults(func=downloadNSACatalog)
+    
+    # parser_sdss_psf = subparsers.add_parser('psf', description=download_sdss_psffile.__doc__)
+    # parser_sdss_psf.set_defaults(func=download_sdss_psffile)
+    
+    # parser.add_argument('args', nargs='+')
+    args = parser.parse_args()
+    # args.func(args)
+
+
 
