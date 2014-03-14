@@ -29,7 +29,10 @@ template = jinja2.Template(
     <tr>
         <td width="30%">
             <table>
-                
+                <tr>
+                    <td>INDEX:</td>
+                    <td>{{ loop.index0 }}</td>
+                </tr>
                 <tr>
                     <td>NAME:</td>
                     <td>{{ row['NAME'] }}</td>
@@ -59,7 +62,8 @@ template = jinja2.Template(
         </td>
         <td>
             <img width="80%" src="{{ '%s' % (plotdir) }}/{{ row['NAME'] }}.png">
-            <a href="http://skyserver.sdss3.org/dr9/en/tools/chart/navi.asp?ra={{radec[loop.index0][0]}}&dec={{radec[loop.index0][1]}}" target="_blank"> <img src="http://skyservice.pha.jhu.edu/DR9/ImgCutout/getjpeg.aspx?ra={{radec[loop.index0][0]}}&dec={{radec[loop.index0][1]}}">
+            <a href="http://skyserver.sdss3.org/dr9/en/tools/chart/navi.asp?ra={{radec[loop.index0][0]}}&dec={{radec[loop.index0][1]}}&opt=F" target="_blank">
+                <img src="http://skyservice.pha.jhu.edu/DR9/ImgCutout/getjpeg.aspx?ra={{radec[loop.index0][0]}}&dec={{radec[loop.index0][1]}}&opt=F&scale=1.5&width=256&height=256">
         </td>
     </tr>
     {% endfor %}
