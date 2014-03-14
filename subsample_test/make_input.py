@@ -114,6 +114,87 @@ def single_SER():
     table.write(outname)
 
 
+def single_DVC_sdss_psf_test():
+    """
+    generate input table for single De Vauc profile for a handful of hand-picked
+    galaxies that are well-contained in a single SDSS field 
+
+    inputtable : str
+        input table name; should be part of NSA catalog in FITS format
+    outname : str
+        output table name
+    """
+    # this will be arguments at some point
+    input = 'SampleZMprobaEllSub_visual.fits'
+    outname = 'test_sdss_psf/input_DVC.fits'
+
+    master = Table.read(input)[[0,1,6,7,17,21,23,26,29,32,33,34,46,48]]
+    # default entries
+    table = master['IAUNAME', 'PID', 'AID', 'RERUN',
+                    'RUN', 'CAMCOL', 'FIELD', 'XPOS', 'YPOS'].copy()
+    # change names for bdfitter
+    table['IAUNAME'].name = 'NAME'
+    table['PID'].name = 'PARENT_ID'
+    table['AID'].name = 'ATLAS_ID'
+
+    Nrows = len(master)
+    DVC_VAL = Column(
+            name='DVC_VAL',
+            data=array([[1, 10, 4, 0.7, 0, 0, 0, 0]]*Nrows).astype(float))
+    DVC_FIX = Column(
+            name='DVC_FIX',
+            data=array([[0, 0, 1, 0, 1, 0, 0, 0]]*Nrows))
+    table.add_columns([DVC_VAL, DVC_FIX])
+
+    table['DVC_VAL'][:,pind['posang']] = deg2rad((master['SERSIC_PHI'].data + 90.) % 360.)
+    table['DVC_VAL'][:,pind['ratio']] = master['SERSIC_BA'].data
+    table['DVC_VAL'][:,pind['Reff']] = master['SERSIC_TH50'].data / 0.396
+    table['DVC_VAL'][:,pind['center_x']] = master['XCEN'].data
+    table['DVC_VAL'][:,pind['center_y']] = master['YCEN'].data
+
+    table.write(outname)
+
+
+def single_DVC_fixRe():
+    """
+    generate input table for single De Vauc profile, with
+    circularized effective radius fixed
+
+    inputtable : str
+        input table name; should be part of NSA catalog in FITS format
+    outname : str
+        output table name
+    """
+    # this will be arguments at some point
+    input = 'SampleZMprobaEllSub_visual.fits'
+    outname = 'single_DVC_fixRe/input_DVC.fits'
+
+    master = Table.read(input)
+    # default entries
+    table = master['IAUNAME', 'PID', 'AID'].copy()
+    # change names for bdfitter
+    table['IAUNAME'].name = 'NAME'
+    table['PID'].name = 'PARENT_ID'
+    table['AID'].name = 'ATLAS_ID'
+
+    Nrows = len(master)
+    DVC_VAL = Column(
+            name='DVC_VAL',
+            data=array([[1, 10, 4, 0.7, 0, 0, 0, 0]]*Nrows).astype(float))
+    DVC_FIX = Column(
+            name='DVC_FIX',
+            data=array([[0, 0, 1, 0, 1, 0, 0, 0]]*Nrows))
+    table.add_columns([DVC_VAL, DVC_FIX])
+
+    table['DVC_VAL'][:,pind['posang']] = deg2rad((master['SERSIC_PHI'].data + 90.) % 360.)
+    table['DVC_VAL'][:,pind['ratio']] = master['SERSIC_BA'].data
+    table['DVC_VAL'][:,pind['center_x']] = master['XCEN'].data
+    table['DVC_VAL'][:,pind['center_y']] = master['YCEN'].data
+    
+    table['DVC_VAL'][:,pind['Reff']] = master['SERSIC_TH50'].data / 0.396
+
+    table.write(outname)
+
 def make_input_two():
     """
     Generate input table for de Vauc + Sersic
@@ -274,4 +355,4 @@ def main():
 
 
 if __name__=='__main__':
-    single_SER()
+    single_DVC_sdss_psf_test()
