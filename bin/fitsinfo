@@ -9,9 +9,15 @@ def print_hdu_info(hdu):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Print FITS hdu info")
+    parser.add_argument("-e", "--ext", help="specify extension (default = 0)", type=int, default=0)
+    parser.add_argument("-he", "--header", help="print header of specified extension",
+                        action='store_true', default=False)
     parser.add_argument('files', nargs='*')
     args = parser.parse_args()
 
     for f in args.files:
         hdu = fits.open(f)
-        print_hdu_info(hdu)
+        if args.header:
+            print repr(hdu[args.ext].header)
+        else:
+            print_hdu_info(hdu)
