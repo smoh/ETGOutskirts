@@ -128,7 +128,7 @@ def single_DVC_sdss_psf_test():
     input = 'SampleZMprobaEllSub_visual.fits'
     outname = 'test_sdss_psf/input_DVC.fits'
 
-    master = Table.read(input)[[0,1,6,7,17,21,23,26,29,32,33,34,46,48]]
+    master = Table.read(input)  #[[0,1,6,7,17,21,23,26,29,32,33,34,46,48]]
     # default entries
     table = master['IAUNAME', 'PID', 'AID', 'RERUN',
                     'RUN', 'CAMCOL', 'FIELD', 'XPOS', 'YPOS'].copy()
