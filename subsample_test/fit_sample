@@ -34,10 +34,11 @@ res_str = '/residuals' if args.res else ''
 debug_str = '/debug' if args.debug else ''
 profiles_str = '{' + '%s' % (profile_name) + ':8}'
 usesdsspsf_str = '/usesdsspsf' if args.usesdsspsf else ''
+savepsf_str = '/savepsf' if args.savepsf else ''
 
-idl_command = "fit_sample, '{:s}', {:d}, {:d}, '{:s}', '{:s}', {:s}, {:s}, profiles={:s}, {:s}".format(
+idl_command = "fit_sample, '{:s}', {:d}, {:d}, '{:s}', '{:s}', {:s}, {:s}, profiles={:s}, {:s}, {:s}".format(
     args.input, args.start, args.end+1, args.outdir+'/', args.datadir+'/', res_str, debug_str, profiles_str,
-    usesdsspsf_str)
+    usesdsspsf_str, savepsf_str)
 
 print idl_command
 
