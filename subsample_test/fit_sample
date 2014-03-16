@@ -22,7 +22,8 @@ parser.add_argument('datadir', help='data directory')
 parser.add_argument('--res', help='store model images', action='store_true')
 parser.add_argument('--debug', help='run in debug mode', action='store_true')
 parser.add_argument('--usesdsspsf', help='use SDSS psf instead of NSA', action='store_true')
-parser.add_argument('--savepsf', help="save sdss psf; requires [data]/sdss_psf directory")
+parser.add_argument('--savepsf', help="save sdss psf; requires [data]/sdss_psf directory",
+                    action='store_true')
 args = parser.parse_args()
 
 profile_name = args.input.split('.fits')[-2].split('input_')[-1]
