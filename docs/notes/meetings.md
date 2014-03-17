@@ -27,7 +27,27 @@ Point-Spread Function issue
 - switch to SDSS PSF: given run, camcol, field, x, y position within the field, use SDSS data(in the disk at Peyton) and Robert's routine to calculate PSF
 
 To do:
-1. Check that not many of the galaxies in my test sample falls on field edges.
-2. Check that those run, camcol, field.. in parent/child image headers matches those values in NSA catalog
-3. Check if NSA images are re-oriented from SDSS images.
+1. Check that not many of the galaxies in my test sample falls on field edges. --> quite a few does spread over two frames, but not many are cut down right in the middle.
+2. Check that those run, camcol, field.. in parent/child image headers matches those values in NSA catalog --> yes, of the multiple images in header that went into mosaick, the one that best containes the galaxy is in the catalog.
+3. Check if NSA images are re-oriented from SDSS images. --> yes, as such that north it up.
+
+
+2014-03-17 Jenny and Claire
+
+If SDSS DR10 has images with sky subtracted in the same way as NSA (Blanton et al. 2011), there is no reason to use mosaicked NSA images as this causes the issue of how to deal with PSF of mosaicked images.
+
+We will use:
+1. SDSS DR 10 sky-subtracted frames
+    - cutout: use XPOS, YPOS in NSA catalog, and cutout square of, say, 5 SDSS effective radius around the galaxy
+    - masking: use NSA mask
+        + need the rotation angle to make north is up as in NSA or to reverse it --> Robert
+        + in child or parent? check
+2. need to generate inverse-variance images: Claire has a code for this. may need to download a metadata file for this.
+3. PSF from SDSS at the given position in field image
+
+TODO:
+1. Confirm with MB that DR10 images used sky-subtraction method of Blanton et al. 2011
+2. Ask RL about how to rotate the field images such that north is up to math NSA masks.
+3. Claire will send the code to generate ivar images.
+
 
