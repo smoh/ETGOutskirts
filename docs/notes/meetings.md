@@ -1,5 +1,5 @@
 
-2014-02-10 Skype w/ Claire on setting things up
+## 2014-02-10 Skype w/ Claire on setting things up
 
 - ivar: inside parent images
 - take a closer look at `make_input.py (I could write my own version of this)`, 
@@ -9,14 +9,14 @@
 - the main dependency of the whole code is idlutils.. but maybe others, too.
 - Let's start with a small sample of 10-50 that covers a range of redshift, sigma, $M_r$, $R_e$
 
-2014-03-06 Jenny
+## 2014-03-06 Jenny
 
 In any case, we need to infer size from dispersion. Try two things:
 
 1. sigma --(Faber-Jackson relation)--> L --(Kormendy relation)--> size
 2. define our own size-velocity dispersion relation using SDSS deVac model mag (see van der Wel et al. 2008 -- large scatter): median / some smaller size constraint for compact objects
 
-2014-03-13 Claire
+## 2014-03-13 Claire
 
 Discussed three issues in using the Fundamnetal Plane
 
@@ -36,7 +36,7 @@ To do:
 3. Check if NSA images are re-oriented from SDSS images. --> yes, as such that north it up.
 
 
-2014-03-17 Jenny and Claire
+## 2014-03-17 Jenny and Claire
 
 If SDSS DR10 has images with sky subtracted in the same way as NSA (Blanton et al. 2011), there is no reason to use mosaicked NSA images as this causes the issue of how to deal with PSF of mosaicked images.
 
@@ -52,7 +52,7 @@ We will use:
 
 TODO:
 
-1. Confirm with MB that DR10 images used sky-subtraction method of Blanton et al. 2011
+1. Confirm with MB that DR10 images used sky-subtraction method of Blanton et al. 2011 --> yes, correct
 2. Ask RL about how to rotate the field images such that north is up to math NSA masks.
 3. Claire will send the code to generate ivar images.
 
