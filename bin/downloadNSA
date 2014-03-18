@@ -28,10 +28,14 @@ def downloadfile(url, savename=None, prefix=None):
     mkdir_p(prefix)
     try:
         f = urlopen(url)
-        # Open our local file for writing
-        with open(prefix +'/'+ savename, "wb") as local_file:
-            local_file.write(f.read())
-            local_file.close()
+        localname = prefix + '/' + savename
+        if os.path.isfile(localname):
+            pass
+        else:
+            # Open our local file for writing
+            with open(localname, "wb") as local_file:
+                local_file.write(f.read())
+                local_file.close()
 
     #handle errors
     except HTTPError, e:
@@ -45,6 +49,27 @@ def download_sdss_psffile(rerun, run, camcol, field, prefix):
     url = 'http://data.sdss3.org/sas/dr10/boss/photo/redux/%s/%i/objcs/%i/psField-%06i-%i-%04i.fit' % (
         rerun, run, camcol, run, camcol, field)
     downloadfile(url, prefix=prefix)
+
+
+def download_sdss_field(filterstr, catalog, prefix):
+    """ Download SDSS field images
+
+    filterstr :  one of 'u', 'g', 'r', 'i', 'z'
+    """
+    from astropy.table import Table
+    if catalog.endswith('.fits'):
+        master = Table.read(catalog)
+    # check if all columns needed exist
+    for name in ['RERUN', 'RUN', 'CAMCOL', 'FIELD']:
+        if not name in master.colnames:
+            raise 'Column %s not found' % name
+    import progressbar
+    progress = progressbar.ProgressBar()
+    for row in progress(master):
+        rerun, run, camcol, field = row['RERUN'], row['RUN'], row['CAMCOL'], row['FIELD']
+        url = "http://data.sdss3.org/sas/dr10/boss/photoObj/frames/%s/%i/%i/frame-%s-%06i-%i-%04i.fits.bz2" % (
+                rerun, run, camcol, filterstr, run, camcol, field)
+        downloadfile(url, prefix=prefix)
 
 
 def download_sdss_psffileCatalog(catalog, prefix):
@@ -114,27 +139,21 @@ def downloadNSACatalog(catalog, prefix):
 if __name__ == '__main__':
 
     import argparse, inspect
-    from argparse import RawTextHelpFormatter
-    parser = argparse.ArgumentParser(description='Download NSA/SDSS images', formatter_class=RawTextHelpFormatter)
-    subparsers = parser.add_subparsers(title='commands')
-
-    for cmdname, func in zip(['cat', 'psf'], [downloadNSACatalog, download_sdss_psffileCatalog]):
-        temppar = subparsers.add_parser(cmdname, description=func.__doc__, formatter_class=RawTextHelpFormatter)
-        temppar.set_defaults(func=func)
-        for argname in inspect.getargspec(func).args:
-            temppar.add_argument(argname) #, help=argparse.SUPPRESS)
-
-    # parser_cat = subparsers.add_parser('nsa', description=downloadNSACatalog.__doc__)
-    # parser_cat.set_defaults(func=downloadNSACatalog)
-    
-    # parser_sdss_psf = subparsers.add_parser('psf', description=download_sdss_psffile.__doc__)
-    # parser_sdss_psf.set_defaults(func=download_sdss_psffile)
-    
-    # parser.add_argument('args', nargs='+')
+    parser = argparse.ArgumentParser(description='Download NSA/SDSS images')
+    parser.add_argument('catalog', help='FITS catalog file (part of NSA)', type=str)
+    parser.add_argument('prefix', help='directory prefix', type=str)
+    parser.add_argument('kind', help='which files to download', nargs='+', type=str,
+                        choices=['NSA', 'psField', 'u', 'g', 'r', 'i', 'z'])
     args = parser.parse_args()
-    # build list of arguments
-    funcargs = [ getattr(args, argname) for argname in inspect.getargspec(args.func).args]
-    args.func(*funcargs)
+    if 'NSA' in args.kind:
+        print 'Downloading NSA files'
+        downloadNSACatalog(args.catalog, args.prefix)
+    if 'psField' in args.kind:
+        print 'Downloading psField files'
+        download_sdss_psffileCatalog(args.catalog, args.prefix)
+    for filt in ['u','g','r','i','z']:
+        if filt in args.kind:
+            download_sdss_field(filt, args.catalog, args.prefix)
 
 
 
