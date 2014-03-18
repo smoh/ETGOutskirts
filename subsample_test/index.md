@@ -19,3 +19,13 @@ with NSA psf
 
 - [SDSS psf](images/subsample_sdss_psf_zscale.png)
 
+## Using SDSS field images
+
+1. SDSS DR 10 sky-subtracted frames
+    - cutout: use XPOS, YPOS in NSA catalog, and cutout square of, say, 5 SDSS effective radius around the galaxy
+    - masking: use NSA mask
+        + need the rotation angle to make north is up as in NSA or to reverse it --> Robert
+        + in child or parent? in child, pixels with flux=0 as in [this example](images/J141224_masking). [ivar](images/J141224_ivar.png) does not contain information about mask.)
+2. need to generate inverse-variance images
+3. PSF from SDSS at the given position in field image
+
