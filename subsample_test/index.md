@@ -17,5 +17,5 @@ with NSA psf
     - In header, the field images that went into the mosaick are recorded as `idR-{RUN#}-{FILTER}{COLUMN}-{FIELD}.fit` with header cards `FILE001, FILE002, ...`
 - NSA PSFs are just average of stars in mosaicked image (i.e., could be from multiple field images)
 
-
+- [SDSS psf](images/subsample_sdss_psf_zscale.png)
 
