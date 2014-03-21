@@ -48,3 +48,4 @@ data/rc3
 subsample_test/index.html
 *.fit
 *.fits.bz2
+*.hdr
