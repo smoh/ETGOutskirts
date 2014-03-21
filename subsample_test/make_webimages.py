@@ -4,14 +4,6 @@ from astropy.table import Table, Column
 import argparse
 from numpy import sign
 
-parser = argparse.ArgumentParser(
-            description="make html page of fitting result")
-parser.add_argument("result", type=str, help="fit result (RAWXXX.fits)")
-parser.add_argument("plotdir", type=str, help="directory of png images")
-parser.add_argument("outname", type=str, help="output html filename")
-args = parser.parse_args()
-
-
 # open the template from file
 # templateLoader = jinja2.FileSystemLoader(searchpath='./')
 # templateEnv = jinja2.Environment(loader=templateLoader)
@@ -62,8 +54,8 @@ template = jinja2.Template(
         </td>
         <td>
             <img width="80%" src="{{ '%s' % (plotdir) }}/{{ row['NAME'] }}.png">
-            <a href="http://skyserver.sdss3.org/dr9/en/tools/chart/navi.asp?ra={{radec[loop.index0][0]}}&dec={{radec[loop.index0][1]}}&opt=F" target="_blank">
-                <img src="http://skyservice.pha.jhu.edu/DR9/ImgCutout/getjpeg.aspx?ra={{radec[loop.index0][0]}}&dec={{radec[loop.index0][1]}}&opt=F&scale=1.5&width=256&height=256">
+            <a href="http://skyserver.sdss3.org/dr9/en/tools/chart/navi.asp?ra={{radec[loop.index0][0]}}&dec={{radec[loop.index0][1]}}&opt={{ opt }}" target="_blank">
+                <img src="http://skyservice.pha.jhu.edu/DR9/ImgCutout/getjpeg.aspx?ra={{radec[loop.index0][0]}}&dec={{radec[loop.index0][1]}}&opt=FG&scale=1.5&width=256&height=256">
         </td>
     </tr>
     {% endfor %}
@@ -71,6 +63,15 @@ template = jinja2.Template(
 </body>
 </html>
 """)
+
+parser = argparse.ArgumentParser(
+            description="make html page of fitting result")
+parser.add_argument("result", type=str, help="fit result (RAWXXX.fits)")
+parser.add_argument("plotdir", type=str, help="directory of png images")
+parser.add_argument("outname", type=str, help="output html filename")
+parser.add_argument("--opt", type=str, help="SDSS navigate options", default='')
+args = parser.parse_args()
+
 
 result = Table.read(args.result)
 # find out the profile name
@@ -98,7 +99,7 @@ radec = [iauname2radec(name) for name in result['NAME']]
 
 
 templatevars = {'table':result, 'profile':profiles[0], 'plotdir':args.plotdir,
-                'radec':radec}
+                'radec':radec, 'opt':args.opt}
 
 with open(args.outname, 'w') as f:
     f.write(template.render(templatevars))
