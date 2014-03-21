@@ -1,3 +1,18 @@
+""" script to prepare sdss field images for bdfitter
+
+assumes following directory structure
+data/
+    nsa/
+        pimages/ -- masking out stars
+        images/ -- further deblending (child)
+    sdss_field/ -- SDSS field images (eventually to be read from Peyton disk)
+    sdss_ivar/ -- ivar for the entire field
+    sdss_psf_meta/ -- SDSS psField files
+    images/ -- final images are stored here
+    ivar/ -- final ivar images are stored here
+    hdr/ -- directory for montage hdr output
+"""
+
 import montage_wrapper as montage
 from scipy.interpolate import interp2d
 from astropy.table import Table
