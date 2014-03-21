@@ -93,7 +93,7 @@ def download_sdss_psffileCatalog(catalog, prefix):
         download_sdss_psffile(row['RERUN'], row['RUN'], row['CAMCOL'], row['FIELD'], args.prefix)
 
 
-def downloadNSA(subdir, iauname, pid, aid, prefix):
+def downloadNSA(subdir, iauname, pid, aid, prefix, ivar=False, psf=False):
     """
     Download NSA child, parent, and psf images to be used in bdfitter
     Saved as
@@ -101,17 +101,21 @@ def downloadNSA(subdir, iauname, pid, aid, prefix):
         images/ -- child images
         ivar/ -- parent images
         psf/ -- psf images
+        pimages/ -- pimages
     """
 
     url = 'http://sdss.physics.nyu.edu/mblanton/v0/detect/v0_1/%s/' % (subdir)
 
     downloadfile(url + 'atlases/%s/%s-%s-atlas-%s.fits.gz' % (
         pid, iauname, pid, aid), prefix=prefix + '/images')
-    downloadfile(url + 'parents/%s-parent-%s.fits.gz' % (
-        iauname, pid), prefix=prefix + '/ivar')
-
-    for band in ['u', 'g', 'r', 'i', 'z', 'fd','nd']:
-        downloadfile('http://sdss.physics.nyu.edu/mblanton/v0/detect/v0_1/%s/%s-%s-bpsf.fits.gz' % (subdir, iauname, band), prefix=prefix+'/psf/')
+    downloadfile(url + '%s-pimage.fits.gz' % (iauname), prefix=prefix + '/pimages')
+    
+    if ivar:
+        downloadfile(url + 'parents/%s-parent-%s.fits.gz' % (
+            iauname, pid), prefix=prefix + '/ivar')
+    if psf:
+        for band in ['u', 'g', 'r', 'i', 'z', 'fd','nd']:
+            downloadfile('http://sdss.physics.nyu.edu/mblanton/v0/detect/v0_1/%s/%s-%s-bpsf.fits.gz' % (subdir, iauname, band), prefix=prefix+'/psf/')
 
 
 def downloadNSACatalog(catalog, prefix):
