@@ -56,4 +56,10 @@ TODO:
 2. Ask RL about how to rotate the field images such that north is up to math NSA masks.
 3. Claire will send the code to generate ivar images.
 
+## 2014-03-21 Jenny and Claire
 
+- Flat(low Sersic N) outer component will be much fainter than core that the flux it takes from the central part should be negligible
+- Do free single Sersic fit for comparison
+
+TODO:
+- dig out NSA files and find out what further deblending was done
