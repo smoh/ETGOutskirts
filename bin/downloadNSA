@@ -109,6 +109,7 @@ def downloadNSA(subdir, iauname, pid, aid, prefix, ivar=False, psf=False):
     downloadfile(url + 'atlases/%s/%s-%s-atlas-%s.fits.gz' % (
         pid, iauname, pid, aid), prefix=prefix + '/images')
     downloadfile(url + '%s-pimage.fits.gz' % (iauname), prefix=prefix + '/pimages')
+    downloadfile(url+'atlases/%s/%s-nimage-%s.fits.gz' % (pid, iauname, pid), prefix=prefix + '/nimages')
     
     if ivar:
         downloadfile(url + 'parents/%s-parent-%s.fits.gz' % (
