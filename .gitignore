@@ -49,3 +49,5 @@ subsample_test/index.html
 *.fit
 *.fits.bz2
 *.hdr
+*.sublime-project
+*.sublime-workspace
