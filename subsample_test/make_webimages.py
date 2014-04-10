@@ -2,6 +2,7 @@ import jinja2
 from glob import glob
 from astropy.table import Table, Column
 import argparse
+import os
 from numpy import sign
 
 # open the template from file
@@ -54,8 +55,10 @@ template = jinja2.Template(
         </td>
         <td>
             <img width="80%" src="{{ '%s' % (plotdir) }}/{{ row['NAME'] }}.png">
+            {% if sdss %}
             <a href="http://skyserver.sdss3.org/dr9/en/tools/chart/navi.asp?ra={{radec[loop.index0][0]}}&dec={{radec[loop.index0][1]}}&opt={{ opt }}" target="_blank">
                 <img src="http://skyservice.pha.jhu.edu/DR9/ImgCutout/getjpeg.aspx?ra={{radec[loop.index0][0]}}&dec={{radec[loop.index0][1]}}&opt=FG&scale=1.5&width=256&height=256">
+            {% endif %}
         </td>
     </tr>
     {% endfor %}
@@ -70,8 +73,10 @@ parser.add_argument("result", type=str, help="fit result (RAWXXX.fits)")
 parser.add_argument("plotdir", type=str, help="directory of png images")
 parser.add_argument("outname", type=str, help="output html filename")
 parser.add_argument("--opt", type=str, help="SDSS navigate options", default='')
+parser.add_argument("--sdss", action='store_true', help='get sdss cutout image?')
 args = parser.parse_args()
 
+plotdir_rel = os.path.relpath(args.plotdir, os.path.dirname(args.outname))
 
 result = Table.read(args.result)
 # find out the profile name
@@ -98,8 +103,8 @@ def iauname2radec(name):
 radec = [iauname2radec(name) for name in result['NAME']]
 
 
-templatevars = {'table':result, 'profile':profiles[0], 'plotdir':args.plotdir,
-                'radec':radec, 'opt':args.opt}
+templatevars = {'table':result, 'profile':profiles[0], 'plotdir':plotdir_rel,
+                'radec':radec, 'opt':args.opt, 'sdss':args.sdss}
 
 with open(args.outname, 'w') as f:
     f.write(template.render(templatevars))
