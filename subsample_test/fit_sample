@@ -1,7 +1,9 @@
 #!/usr/bin/env python
+""" wrapper for running fit_sample.pro """
 
 import argparse
 from subprocess import call
+import datetime
 
 def mkdir_p(path):
     import os, errno
@@ -16,30 +18,41 @@ def mkdir_p(path):
 parser = argparse.ArgumentParser(description='run fit_sample on input file')
 parser.add_argument('input', help='input fits table')
 parser.add_argument('start', help='zero-based starting index', type=int)
-parser.add_argument('end', help='zero-based end index', type=int)
+parser.add_argument('end', help='zero-based end index (inclusive)', type=int)
 parser.add_argument('outdir', help='output directory')
 parser.add_argument('datadir', help='data directory')
-parser.add_argument('--res', help='store model images', action='store_true')
-parser.add_argument('--debug', help='run in debug mode', action='store_true')
-parser.add_argument('--usesdsspsf', help='use SDSS psf instead of NSA', action='store_true')
+parser.add_argument('-f', '--filter', help='filter to fit', type=str, default='r')
+parser.add_argument('-r', '--res', help='store model images', action='store_true')
+parser.add_argument('-d', '--debug', help='run in debug mode', action='store_true')
 parser.add_argument('--savepsf', help="save sdss psf; requires [data]/sdss_psf directory",
                     action='store_true')
+parser.add_argument('-i', '--imgdir', help='image directory', type=str)
 args = parser.parse_args()
 
 profile_name = args.input.split('.fits')[-2].split('input_')[-1]
+profiles_str = '{' + '%s' % (profile_name) + ':8}'
+# output directories
 mkdir_p(args.outdir)
 if args.res:
     mkdir_p(args.outdir + '/models')
-res_str = '/residuals' if args.res else ''
-debug_str = '/debug' if args.debug else ''
-profiles_str = '{' + '%s' % (profile_name) + ':8}'
-usesdsspsf_str = '/usesdsspsf' if args.usesdsspsf else ''
-savepsf_str = '/savepsf' if args.savepsf else ''
+if args.savepsf:
+    mkdir_p(args.datadir + '/sdss_psf')
 
-idl_command = "fit_sample, '{:s}', {:d}, {:d}, '{:s}', '{:s}', {:s}, {:s}, profiles={:s}, {:s}, {:s}".format(
-    args.input, args.start, args.end+1, args.outdir+'/', args.datadir+'/', res_str, debug_str, profiles_str,
-    usesdsspsf_str, savepsf_str)
 
+# build command
+idl_command = "fit_sample, '{:s}', {:d}, {:d}, '{:s}', '{:s}'".format(
+    args.input, args.start, args.end+1, args.outdir+'/', args.datadir+'/')
+idl_command += ', profiles={:s}'.format(profiles_str)
+if args.res:
+    idl_command += ', /residuals'
+if args.debug:
+    idl_command += ', /debug'
+if args.savepsf:
+    idl_command += ', /savepsf'
+if args.imgdir:
+    idl_command += ", imgdir='{:s}'".format(args.imgdir + '/')
+
+print datetime.datetime.now()
 print idl_command
 
 call(["idl", "-e", idl_command])
