@@ -51,3 +51,5 @@ subsample_test/index.html
 *.hdr
 *.sublime-project
 *.sublime-workspace
+# logfiles
+log*
