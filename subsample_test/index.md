@@ -36,6 +36,13 @@ with NSA psf
 2. need to generate inverse-variance images: follow [this](http://data.sdss3.org/datamodel/files/BOSS_PHOTOOBJ/frames/RERUN/RUN/CAMCOL/frame.html) instruction by SDSS
 3. PSF from SDSS at the given position in field image
 
+### Deblending
+
+- NSA images
+    * mosaic
+    * parent: cutout + masked (using pimage)
+    * child: additional deblending    
+
 ## Preparing SDSS field images for bdfitter
 
 * data directory structure
@@ -50,3 +57,12 @@ data/
     ivar/
     psf/
 ```
+
+## Fit results with SDSS images
+* single de Vaucouleurs profile - [deblended](sdss_psf/dvc/deblended/summary.html)
+* single Sersic profile
+    - [deblended](sdss_psf/ser/deblended/summary.html), [with profile](sdss_psf/ser/deblended/summaryProfile.html)
+    - [masked](sdss_psf/ser/masked/summary.html)
+    - [raw](sdss_psf/ser/raw/summary.html)
+* single de Vaucouleurs profile with Re fixed - 
+* 2 Sersic profile - [deblended](sdss_psf/ser2/deblended/summary.html)
