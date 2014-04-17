@@ -1,0 +1,45 @@
+\documentclass{aastex}
+
+% packages
+\usepackage{natbib}
+
+
+
+% new commands go here
+\newcommand{\HI}{\ion{H}{1}}
+
+
+\begin{document}
+
+\title{Outskirts of Elliptical Galaxies}
+\author{authors}
+
+
+\begin{abstract}
+    abstract    
+\end{abstract}    
+
+
+\section{Introduction}
+Introduction...
+
+
+\section{Fitting}
+\subsection{Size from the Fundamental Plane}
+
+\begin{eqnarray}
+       \mu_0 &= 2.5 + \log(2 \pi r^2) - 10 \log(1+z)
+   \end{eqnarray}   
+
+The effective circular size $R_0$ in kpc is related to $r$ by
+the angular diameter distance $D_A$ (kpc/arcsec):
+
+\begin{eqnarray}
+    \nonumber r &=& R_0 / D_A \\
+    \log R_0 &=& a \log \sigma - \frac{b}{2.5} \mu_0 + c \\
+    \nonumber \log R_0 &=& \frac{1}{1 + 2 b} \left[ a\log \sigma
+        - \frac{b}{2.5} \left(m + 2.5\log \frac{2\pi}{D_A^2} - 10 \log (1+z)\right)
+        + c \right]
+\end{eqnarray}
+
+\end{document}
