@@ -53,3 +53,4 @@ subsample_test/index.html
 *.sublime-workspace
 # logfiles
 log*
+.ipynb_checkpoints/
