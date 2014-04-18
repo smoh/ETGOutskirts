@@ -1,0 +1,22 @@
+#!/usr/bin/env python
+import argparse
+import glob, os
+from astropy.table import Table, vstack
+
+parser = argparse.ArgumentParser(
+			description="combine RAwFIT files")
+parser.add_argument('path', type=str,
+					help='path to RAWFIT files')
+args = parser.parse_args()
+
+
+fnlist = sorted(glob.glob(args.path + '/RAWFIT*.fits'))
+tlist = []
+for i, f in  enumerate(fnlist):
+	print i, f
+	tlist.append(Table.read(f))
+fout = args.path + '/' + \
+		os.path.basename(fnlist[0]).split('.')[0] +'.'+ fnlist[-1].split('.')[-2]+'.fits'
+print '--> %s' % (fout)
+tcombined = vstack(tlist, join_type='exact')
+tcombined.write(fout)
