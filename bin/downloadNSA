@@ -93,7 +93,7 @@ def download_sdss_psffileCatalog(catalog, prefix):
         download_sdss_psffile(row['RERUN'], row['RUN'], row['CAMCOL'], row['FIELD'], args.prefix)
 
 
-def downloadNSA(subdir, iauname, pid, aid, prefix, ivar=False, psf=False):
+def downloadNSA(subdir, iauname, pid, aid, prefix, ivar=True, psf=False):
     """
     Download NSA child, parent, and psf images to be used in bdfitter
     Saved as
@@ -109,7 +109,7 @@ def downloadNSA(subdir, iauname, pid, aid, prefix, ivar=False, psf=False):
     downloadfile(url + 'atlases/%s/%s-%s-atlas-%s.fits.gz' % (
         pid, iauname, pid, aid), prefix=prefix + '/images')
     downloadfile(url + '%s-pimage.fits.gz' % (iauname), prefix=prefix + '/pimages')
-    downloadfile(url+'atlases/%s/%s-nimage-%s.fits.gz' % (pid, iauname, pid), prefix=prefix + '/nimages')
+    # downloadfile(url+'atlases/%s/%s-nimage-%s.fits.gz' % (pid, iauname, pid), prefix=prefix + '/nimages')
     
     if ivar:
         downloadfile(url + 'parents/%s-parent-%s.fits.gz' % (
@@ -158,6 +158,7 @@ if __name__ == '__main__':
         download_sdss_psffileCatalog(args.catalog, args.prefix)
     for filt in ['u','g','r','i','z']:
         if filt in args.kind:
+            print 'Downloading filter %s' % (filt)
             download_sdss_field(filt, args.catalog, args.prefix)
 
 
