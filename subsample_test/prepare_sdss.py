@@ -183,22 +183,22 @@ def reproject2child(filter, run, camcol, field, iauname, pid, aid, datadir):
     print ivarname, 'saved'
 
     # put column position angle in the psf header
-    sdss_psf_name = datadir+'/sdss_psf/'+iauname + '-%s-psf.fits' % (filter)
-    angle = fits.getval(sdss_field_name, 'SPA', ext=0)
-    hdr = fits.getheader(sdss_psf_name)
-    hdr['SPA'] = angle
+    # sdss_psf_name = datadir+'/sdss_psf/'+iauname + '-%s-psf.fits' % (filter)
+    # angle = fits.getval(sdss_field_name, 'SPA', ext=0)
+    # hdr = fits.getheader(sdss_psf_name)
+    # hdr['SPA'] = angle
 
 
 
 if __name__ == '__main__':
     
-    master = Table.read('SampleZMprobaEllSub_visual.fits')    
+    master = Table.read('testsample.fits')    
     filter = 'r'
     child_ext = 2
     datadir = 'data_testsample'
 
     # prepare directories
-    for subdir in ['hdr', 'raw', 'masked', 'deblended', 'ivar']:
+    for subdir in ['sdss_ivar', 'hdr', 'raw', 'masked', 'deblended', 'ivar']:
         mkdir_p(datadir + '/' + subdir)
 
 
@@ -210,9 +210,9 @@ if __name__ == '__main__':
         ra, dec = master['RA_1', 'DEC_1'][igal].data  # galaxy ra, dec in degrees
 
         # save inverse variance of the frame image
-        save_ivar(filter, run, camcol, field)
+        save_ivar(filter, run, camcol, field, datadir)
         # reproject frame/ivar to NSA child
-        reproject2child(filter, run, camcol, field, iauname, pid, aid)
+        reproject2child(filter, run, camcol, field, iauname, pid, aid, datadir)
 
         # do masking and deblending of cutout frame image
         imgname = datadir + '/raw/' + iauname + '.fits'
@@ -242,14 +242,14 @@ if __name__ == '__main__':
         # load extra sources to be deblended
         child = fits.getdata(datadir+'/nsa/images/'+ \
             get_childname(iauname, pid, aid), ext=child_ext)
-        parent = fits.getdata(dataidr+'/nsa/ivar/%s-parent-%s.fits.gz' % (iauname, pid),
+        parent = fits.getdata(datadir+'/nsa/ivar/%s-parent-%s.fits.gz' % (iauname, pid),
                                 ext=2*child_ext)
         extra = parent - child  # to be subtracted from image
 
         # save images
         img_masked = img[0].data * mask
         img[0].data = img_masked
-        img.writeto(dataidr+'/masked/'+iauname+'.fits', clobber=True) #, data=img_masked)
+        img.writeto(datadir+'/masked/'+iauname+'.fits', clobber=True) #, data=img_masked)
         img_deblended = (img[0].data - extra) * mask
         img_deblended[isnan(img_deblended)] = 0  # nan to zero
         img[0].data = img_deblended
