@@ -4,13 +4,26 @@
     a:visited {color: #0033ff;}
 </style>
 
-Subsample test
-==============
+
+## New subsample
+1. Bigger random selection from NSA
+    - [TOPCAT session](../sample.session.fits) from SampleZMprobaEll in NSA+MORPH catalog, assign a random number (0-1) and select random 10% with random number > 0.9 & VDISP>70 --> dubbed SampleZMprobaEll_sub N=359
+    - [testsample_ra_dec.txt](testsample_ra_dec.txt): visual classification using SDSS images
+        * VELL column 1 if elliptical 0 if not
+        * 136 excluded by visual (38%)
+        * ra, dec files for SDSS ImgList: [testsample_ra_dec_v1.txt](testsample_ra_dec_v1.txt), [testsample_ra_dec_v0.txt](testsample_ra_dec_v0.txt)
+2. MASSIVE sample
+    - The [list](massive.dat) of ra, dec from Jenny
+    - `nsa_morph_massive` : match with NSA+morph catalog, best for each row in the list: massive end (sigma > 200 km/s), but most (~50/70) of them do not have a velocity dispersion from SDSS
+session overwritten
+
+* * *
+
+# Subsample test
 
 test sample of 49 galaxies
 
-with NSA psf
-------------
+## with NSA psf
 - [single DeVauc](single_DVC/summary.html)
 - [single Sersic](single_SER/summary.html)
 - [NSA mosaicked images](images/subsample_image.png)
