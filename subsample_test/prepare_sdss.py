@@ -1,10 +1,11 @@
 """ script to prepare sdss field images for bdfitter
 
 assumes following directory structure
-data/
+[datadir]/
     nsa/
         pimages/ -- masking out stars
         images/ -- further deblending (child)
+        iavr/ -- paret images
     sdss_field/ -- SDSS field images (eventually to be read from Peyton disk)
     sdss_ivar/ -- ivar for the entire field
     sdss_psf_meta/ -- SDSS psField files
@@ -131,10 +132,10 @@ def nearest_neighbor(x, y, z, xnew, ynew):
         return znew
 
 
-def save_ivar(filter, run, camcol, field):
+def save_ivar(filter, run, camcol, field, datadir):
     """ Build and save inverse variance image """
 
-    sdss_field_name = 'data/sdss_field/'+get_framename(run, camcol, field, filter)
+    sdss_field_name = datadir+'/sdss_field/'+get_framename(run, camcol, field, filter)
     hdulist = fits.open(sdss_field_name)
     hdr, img = hdulist[0].header, hdulist[0].data
     nrowc = img.shape[0]
@@ -165,24 +166,24 @@ def save_ivar(filter, run, camcol, field):
 
 
 
-def reproject2child(filter, run, camcol, field, iauname, pid, aid):
+def reproject2child(filter, run, camcol, field, iauname, pid, aid, datadir):
     """ reproject field image and ivar to match NSA child """
     
-    sdss_field_name = 'data/sdss_field/'+get_framename(run, camcol, field, filter)
-    sdss_ivar_name  = 'data/sdss_ivar/'+get_framename(run, camcol, field, filter)
+    sdss_field_name = datadir+'/sdss_field/'+get_framename(run, camcol, field, filter)
+    sdss_ivar_name  = datadir+'/sdss_ivar/'+get_framename(run, camcol, field, filter)
     child = get_childname(iauname, pid, aid)
     child_ext = ['u','g','r','i','z'].index(filter)
-    hdrout = 'data/hdr/' + child.replace('fits.gz','.hdr')
-    montage.mGetHdr('data/nsa/images/'+child, hdrout, hdu=child_ext)  # extension important
-    imgname = 'data/raw/'+iauname+'.fits'
-    ivarname = 'data/ivar/'+iauname+'.fits'
+    hdrout = datadir+'/hdr/' + child.replace('fits.gz','.hdr')
+    montage.mGetHdr(datadir+'/nsa/images/'+child, hdrout, hdu=child_ext)  # extension important
+    imgname = datadir+'/raw/'+iauname+'.fits'
+    ivarname = datadir+'/ivar/'+iauname+'.fits'
     montage.reproject(sdss_field_name, imgname, header=hdrout, exact_size=True)
     montage.reproject(sdss_ivar_name, ivarname, header=hdrout, exact_size=True)
     print imgname, 'saved'
     print ivarname, 'saved'
 
     # put column position angle in the psf header
-    sdss_psf_name = 'data/sdss_psf/'+iauname + '-%s-psf.fits' % (filter)
+    sdss_psf_name = datadir+'/sdss_psf/'+iauname + '-%s-psf.fits' % (filter)
     angle = fits.getval(sdss_field_name, 'SPA', ext=0)
     hdr = fits.getheader(sdss_psf_name)
     hdr['SPA'] = angle
@@ -194,10 +195,11 @@ if __name__ == '__main__':
     master = Table.read('SampleZMprobaEllSub_visual.fits')    
     filter = 'r'
     child_ext = 2
+    datadir = 'data_testsample'
 
     # prepare directories
     for subdir in ['hdr', 'raw', 'masked', 'deblended', 'ivar']:
-        mkdir_p('data/' + subdir)
+        mkdir_p(datadir + '/' + subdir)
 
 
     for igal in range(len(master)):
@@ -213,7 +215,7 @@ if __name__ == '__main__':
         reproject2child(filter, run, camcol, field, iauname, pid, aid)
 
         # do masking and deblending of cutout frame image
-        imgname = 'data/raw/' + iauname + '.fits'
+        imgname = datadir + '/raw/' + iauname + '.fits'
         img = fits.open(imgname)
         wimg = wcs.WCS(img[0].header)
         imnaxis1, imnaxis2 = wimg.naxis1, wimg.naxis2
@@ -221,7 +223,7 @@ if __name__ == '__main__':
         imworldy = wimg.wcs_pix2world(zeros(imnaxis2), arange(imnaxis2), 1)[1]
 
         # load mask image
-        pimage = 'data/nsa/pimages/'+'%s-pimage.fits.gz' % (iauname)
+        pimage = datadir + '/nsa/pimages/'+'%s-pimage.fits.gz' % (iauname)
         pimg = fits.open(pimage)
         wpimg = wcs.WCS(pimg[0].header)
         pimnaxis1, pimnaxis2 = pimg[0].header['NAXIS1'], pimg[0].header['NAXIS2']
@@ -238,20 +240,20 @@ if __name__ == '__main__':
         mask[where(pimg_new == -1)] = 1.  # unmasked region
 
         # load extra sources to be deblended
-        child = fits.getdata('data/nsa/images/'+ \
+        child = fits.getdata(datadir+'/nsa/images/'+ \
             get_childname(iauname, pid, aid), ext=child_ext)
-        parent = fits.getdata('data/nsa/ivar/%s-parent-%s.fits.gz' % (iauname, pid),
+        parent = fits.getdata(dataidr+'/nsa/ivar/%s-parent-%s.fits.gz' % (iauname, pid),
                                 ext=2*child_ext)
         extra = parent - child  # to be subtracted from image
 
         # save images
         img_masked = img[0].data * mask
         img[0].data = img_masked
-        img.writeto('data/masked/'+iauname+'.fits', clobber=True) #, data=img_masked)
+        img.writeto(dataidr+'/masked/'+iauname+'.fits', clobber=True) #, data=img_masked)
         img_deblended = (img[0].data - extra) * mask
         img_deblended[isnan(img_deblended)] = 0  # nan to zero
         img[0].data = img_deblended
-        img.writeto('data/deblended/'+iauname+'.fits', clobber=True)#, data=img_deblended)
+        img.writeto(datadir+'/deblended/'+iauname+'.fits', clobber=True)#, data=img_deblended)
 
         img.close()
         pimg.close()
