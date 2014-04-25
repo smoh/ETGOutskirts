@@ -10,64 +10,35 @@ import numpy as np
 import math as m
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+from sersic import Sersic
 import mpltools
 
-def sersic_param(param):
-    if len(param) % 8 != 0:
-        raise 'param array needs to be a multiple of 8'
-    param = atleast_1d(param)
-    Nprofiles = param.size / 8
-    dic = {}
-    for i, p in enumerate(param.reshape([Nprofiles, 8])):
-        print '[%i]' % i, p
-
-# parameter dicts
-pind = {
-    'I0': 0,
-    'Reff': 1,
-    'index': 2,
-    'ratio': 3,
-    'shape': 4,
-    'center_x': 5,
-    'center_y': 6,
-    'posang': 7,
-}
-pname = {v:k for k, v in pind.items()}
+rc('savefig', dpi=80)
 
 
-class AttrDict(dict):
-    def __init__(self, *args, **kwargs):
-        super(AttrDict, self).__init__(*args, **kwargs)
-        self.__dict__ = self
+def add_ellipse(ax, x, y, rx, ry, pa,**kwargs):
+    """
+    Add an ellipse to the axes
 
+    ax : axes
+    x, y : center
+    rx, ry : semi- major, minor axis
+    pa : radian from x axis counter-clockwise
+    kwargs : passed on to matplotlib.patches.Ellipse
+    """
+    # default
+    if not kwargs.has_key('fc'):
+        kwargs['fc'] = 'None'
+    if not kwargs.has_key('ec'):
+        kwargs['ec'] = 'c'
+    if not kwargs.has_key('lw'):
+        kwargs['lw'] = 2
 
-class Parameters(AttrDict):
-    """ single Sersic profile parameters"""
-    def __init__(self, param):
-        d = {}
-        d['Ie'] = param[0]
-        d['Re'] = param[1]
-        d['N'] = param[2]
-        d['ba'] = param[3]
-        d['shape'] = param[4]
-        d['xc'] = param[5]
-        d['yc'] = param[6]
-        d['posang'] = param[7]
-        AttrDict.__init__(self, d)
+    from matplotlib.patches import Ellipse
+    e = Ellipse(xy=(x, y), width=2*rx, height=2*ry, angle=rad2deg(pa)+90.,
+                **kwargs)
+    ax.add_artist(e)
 
-    def __str__(self):
-        info = []
-        info.append('%12s = %10.6f' % ('Ie', self.Ie))
-        info.append('%12s = %10.6f' % ('Re', self.Re))
-        info.append('%12s = %10.6f' % ('N', self.N))
-        info.append('%12s = %10.6f' % ('ba', self.ba))
-        info.append('%12s = %10.6f' % ('xc', self.xc))
-        info.append('%12s = %10.6f' % ('yc', self.yc))
-        info.append('%12s = %10.6f' % ('posang', self.posang))
-        return '\n'.join(info)
-
-    def __repr__(self):
-        return self.__str__()
 
 def azimuthalAverage(image, center=None, stddev=False, returnradii=False, return_nr=False, 
         binsize=0.5, weights=None, steps=False, interpnan=False, left=None, right=None,
@@ -326,11 +297,11 @@ def plot_residual(iauname, param_fit, datadir, modeldir,
 
     def add_effective_ellipse(ax):
         from matplotlib.patches import Ellipse
-        e1 = Ellipse(xy=(param_fit.xc, param_fit.yc), width=2*param_fit.Re,
-                        height=2*param_fit.Re/param_fit.ba, angle=rad2deg(param_fit.posang)+90.,
+        e1 = Ellipse(xy=(param_fit.x, param_fit.y), width=2*param_fit.Re,
+                        height=2*param_fit.Re/param_fit.q, angle=rad2deg(param_fit.pa)+90.,
                         fc='None', ec='c', lw=2)
-        e2 = Ellipse(xy=(param_fit.xc, param_fit.yc), width=8*param_fit.Re,
-                        height=8*param_fit.Re/param_fit.ba, angle=rad2deg(param_fit.posang)+90.,
+        e2 = Ellipse(xy=(param_fit.x, param_fit.y), width=8*param_fit.Re,
+                        height=8*param_fit.Re/param_fit.q, angle=rad2deg(param_fit.pa)+90.,
                         fc='None', ec='c', lw=2)
         # ax.add_artist(e)
         ax.add_artist(e1)
@@ -372,17 +343,17 @@ def plot_residual(iauname, param_fit, datadir, modeldir,
     fig.add_axes(ax_res)
 
     pData = getProfile(
-            data, param_fit.Re, param_fit.ba, param_fit.posang, param_fit.xc, param_fit.yc)
+            data, param_fit.Re, param_fit.q, param_fit.pa, param_fit.x, param_fit.y)
     pModel = getProfile(
-            model, param_fit.Re, param_fit.ba, param_fit.posang, param_fit.xc, param_fit.yc)
+            model, param_fit.Re, param_fit.q, param_fit.pa, param_fit.x, param_fit.y)
     pRes = getProfile(
-            residual, param_fit.Re, param_fit.ba, param_fit.posang, param_fit.xc, param_fit.yc)
+            residual, param_fit.Re, param_fit.q, param_fit.pa, param_fit.x, param_fit.y)
     ivar[isnan(ivar)] = 1.
     pVar = getProfile(
-            1./ivar, param_fit.Re, param_fit.ba, param_fit.posang, param_fit.xc, param_fit.yc)
+            1./ivar, param_fit.Re, param_fit.q, param_fit.pa, param_fit.x, param_fit.y)
     pRedChi = getProfile(
             residual**2*ivar,
-            param_fit.Re, param_fit.ba, param_fit.posang, param_fit.xc, param_fit.yc,
+            param_fit.Re, param_fit.q, param_fit.pa, param_fit.x, param_fit.y,
             limit=-1)
 
     rad = pData['rad'] / param_fit.Re
@@ -396,7 +367,7 @@ def plot_residual(iauname, param_fit, datadir, modeldir,
     ax4.fill_between(rad, sbData-sbSigma, sbData+sbSigma, where=good,
                      edgecolor='None', facecolor='0.85')
     ax4.plot(rad, sbModel, 'r-', lw=2)
-    ax4.axvline(rad[good][-1], ls='--', c='k')  # radius at which sigma(mag/arsec^2) reaches 2
+    # ax4.axvline(rad[good][-1], ls='--', c='k')  # radius at which sigma(mag/arsec^2) reaches 2
     # ax_res.errorbar(rad, sbData-sbModel, yerr=sbSigma, fmt='bo-')
     ax_res.errorbar(rad, (sbData-sbModel)/sbSigma, fmt='bo-')
     ax_res.axhline(0, ls=':', c='k')
@@ -440,22 +411,28 @@ def plot_residual(iauname, param_fit, datadir, modeldir,
 
 
 def test_plot_residual():
-    result = Table.read('sdss_psf/ser/deblended/RAWFIT00000.00048.fits')
-    datadir = 'sdss_psf/ser/data/'
-    modeldir = 'sdss_psf/ser/deblended/models'
     if 0:
+        result = Table.read('sdss_psf/ser/deblended/RAWFIT00000.00048.fits')
+        datadir = 'sdss_psf/ser/data/'
+        modeldir = 'sdss_psf/ser/deblended/models'
         gal = result[9]
-        v = plot_residual(gal['NAME'], Parameters(gal['FIT_SER']), datadir, modeldir)
-    if 1:
+        v = plot_residual(gal['NAME'], Sersic(gal['FIT_SER']), datadir, modeldir)
+    if 0:
+        result = Table.read('sdss_psf/ser/deblended/RAWFIT00000.00048.fits')
+        datadir = 'sdss_psf/ser/data/'
+        modeldir = 'sdss_psf/ser/deblended/models'
         for i, gal in enumerate(result):
             print i
-            v = plot_residual(gal['NAME'], Parameters(gal['FIT_SER']), datadir, modeldir,
+            v = plot_residual(gal['NAME'], Sersic(gal['FIT_SER']), datadir, modeldir,
                             savename='sdss_psf/ser/deblended/plotProfile/%s.png' % gal['NAME'])
     if 1:
+        result = Table.read('sdss_psf/dvc/deblended/RAWFIT00000.00048.fits')
+        datadir = 'sdss_psf/dvc/data/'
+        modeldir = 'sdss_psf/dvc/deblended/models'
         for i, gal in enumerate(result):
             print i
-            v = plot_residual(gal['NAME'], Parameters(gal['FIT_SER']), datadir, modeldir,
-                            savename='sdss_psf/ser/deblended/plotProfile/%s.png' % gal['NAME'])
+            v = plot_residual(gal['NAME'], Sersic(gal['FIT_DVC']), datadir, modeldir,
+                            savename='sdss_psf/dvc/deblended/plotProfile/%s.png' % gal['NAME'])
     return v
 
 
@@ -487,9 +464,10 @@ def main():
 
     for index in range(row_start, row_end):
         gal = result[index]
-        param_fit = Parameters(gal['FIT_%s' % (profile)])
-        plot_residual(gal['NAME'], param_fit, datadir, modeldir)
+        param_fit = Sersic(gal['FIT_%s' % (profile)])
+        plot_residual(gal['NAME'], param_fit, datadir, modeldir,
+            savename=outdir+'/%s.png'%(gal['NAME']))
 
 
-# if __name__ == '__main__':
-#     main()
+if __name__ == '__main__':
+    main()
