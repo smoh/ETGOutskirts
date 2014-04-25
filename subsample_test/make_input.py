@@ -1,19 +1,51 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
-###########################
-#
-# make_input.py
-#
-# this is an example of how to make input for fit_sample.pro
-#
-##############################
 """
-Created on Thu Feb  6 11:39:36 2014
+Script to make input FITS for bdfitter
 
-@author: clackner
+-------------
+Claire's note
+-------------
+[NAME OF PROFILE]_VAL
+[NAME OF PROFILE]_FIX
+each with 8 X (the number of profiles)
 
-program details
+The name of the profile is whatever you want, but you need to give it
+to fit_sample, so it can find the input parameters
+XXX_FIX is a boolean array which =1 for fixed parameters
+XXX_VAL is the input values, including fixed values
+
+if you don't fix the initial position of flux, default values will 
+be chosen by the code (based on image size)
+the parameters (in order) are:
+
+0 -- the surface brightness
+1 -- the half light radius (refers to the semimajor axis)
+2 -- Sersic index
+3 -- axis ratio (minor/major)
+4 -- shape of isophote, default is zero and fixed, 
+        but if you specify XXX_FIX you need to fix the 4th parameter
+5 -- x coordinate of center of profile, be default multiple profiles 
+        share a center
+6 -- y coordinate of center
+7 -- position angle (radians counterclockwise from x-axis)
+
+you need to pick starting values for the size, and the axis ratio
+starting values for the surface brightness and the position will
+be set in the code, don't set the flux to zero, as the code
+just rescales values (so can't rescale 0)
+
+for two component fits, always but the *bulge* (smaller +higher sersic)
+profile first
+you'll have to source the fixed values from somewhere, either
+based on the radius, or based on previously fitting the profiles
+                    
+it might be good to have different input scripts, for example
+you could make 1 input file to fit the sersic/dvc profile and after
+that runs, make another file for the two component fits, which 
+takes the olds fits as inputs for the VALs arrays
+    
 """
+
 from pylab import *
 import sys, os, re
 import argparse
@@ -21,141 +53,111 @@ import numpy as np
 import pyfits
 
 from astropy.table import Table, Column
+from astropy.io import fits
 import argparse
-from configobj import ConfigObj
 
-# parameter index dictionary
-pind = {
-    'I0': 0,
-    'Reff': 1,
-    'index': 2,
-    'ratio': 3,
-    'shape': 4,
-    'center_x': 5,
-    'center_y': 6,
-    'posang': 7,
-}
-
-def single_DVC():
-    """
-    generate input table for single De Vauc profile
-
-    inputtable : str
-        input table name; should be part of NSA catalog in FITS format
-    outname : str
-        output table name
-    """
-    # this will be arguments at some point
-    input = 'SampleZMprobaEllSub_visual.fits'
-    outname = 'single_DVC/input_DVC.fits'
-
-    master = Table.read(input)
-    # default entries
-    table = master['IAUNAME', 'PID', 'AID'].copy()
-    # change names for bdfitter
-    table['IAUNAME'].name = 'NAME'
-    table['PID'].name = 'PARENT_ID'
-    table['AID'].name = 'ATLAS_ID'
-
-    Nrows = len(master)
-    DVC_VAL = Column(
-            name='DVC_VAL',
-            data=array([[1, 10, 4, 0.7, 0, 0, 0, 0]]*Nrows).astype(float))
-    DVC_FIX = Column(
-            name='DVC_FIX',
-            data=array([[0, 0, 1, 0, 1, 0, 0, 0]]*Nrows))
-    table.add_columns([DVC_VAL, DVC_FIX])
-
-    table['DVC_VAL'][:,pind['posang']] = deg2rad((master['SERSIC_PHI'].data + 90.) % 360.)
-    table['DVC_VAL'][:,pind['ratio']] = master['SERSIC_BA'].data
-    table['DVC_VAL'][:,pind['Reff']] = master['SERSIC_TH50'].data / 0.396
-    table['DVC_VAL'][:,pind['center_x']] = master['XCEN'].data
-    table['DVC_VAL'][:,pind['center_y']] = master['YCEN'].data
-
-    table.write(outname)
+from sersic import ip, nanomaggie2mag
 
 
-def single_SER():
+class InputTable(Table):
+    """Input table for bdfitter"""
+    def __init__(self, source):
+        super(InputTable, self).__init__()
+        self.source = source
+        self.srctab = Table.read(source)
+        self._get_default_entries()
+
+    def _get_default_entries(self):
+        """
+        IAUNAME : identifier
+        RUN, CAMCOL, FIELD, XPOS, YPOX : for reading PSF
+        SPA : for rotating PSF
+        """
+        for k in ['IAUNAME', 'RUN', 'CAMCOL', 'FIELD', 'XPOS', 'YPOS']:
+            if not k in self.srctab.colnames:
+                raise ValueError, "%s not found" % (k)
+            self.add_column(self.srctab[k])
+        self['IAUNAME'].name = 'NAME'
+
+        # rotation angle for SDSS PSF
+        angle = []
+        for row in self:
+            name = 'data_testsample/sdss_field/frame-r-%06i-%i-%04i.fits' % (
+                row['RUN'], row['CAMCOL'], row['FIELD'])
+            angle.append(fits.getheader(name)['SPA'])
+        self.add_column(Column(name='SPA', data=array(angle).astype(float)))
+
+    def add_profile(self, name, ncomp):
+        """
+        name : name of the profile
+        ncomp : the number of components
+        """
+        Nrows = len(self.srctab)
+        val = Column(
+            name='%s_VAL' % (name),
+            data=array([[1, 10, 4, 0.7, 0, 0, 0, 0]*ncomp]*Nrows).astype(float))
+        fix = Column(
+            name='%s_FIX' % (name),
+            data=array([[0, 0, 0, 0, 1, 0, 0, 0]*ncomp]*Nrows))
+        self.add_columns([val, fix])
+
+        
+    def set_values_from_NSA(self, name, icomp):
+        """
+        Set initial values of icomp-th component of profile to
+        those given by NSA single Sersic profile
+
+        name : name of the profile
+        icomp : zero-based i-th component to set the values
+        """
+        # get initial values from NSA Sersic fitting
+        val = '%s_VAL' % (name)
+        self[val][:,icomp*8 + ip['pa']] = deg2rad((self.srctab['SERSIC_PHI'].data + 90.) % 360.)
+        self[val][:,icomp*8 + ip['q']] = self.srctab['SERSIC_BA'].data
+        self[val][:,icomp*8 + ip['Re']] = self.srctab['SERSIC_TH50'].data / 0.396
+        self[val][:,icomp*8 + ip['x']] = self.srctab['XCEN'].data
+        self[val][:,icomp*8 + ip['y']] = self.srctab['YCEN'].data     
+
+    def write(self, *args, **kwargs):
+        # ugly way to get registry working
+        Table(self).write(*args, **kwargs)   
+
+
+
+def single_SER(input, outname):
     """
     generate input table for single Sersic profile
 
-    inputtable : str
+    input : str
         input table name; should be part of NSA catalog in FITS format
     outname : str
         output table name
     """
-    # this will be arguments at some point
-    input = 'SampleZMprobaEllSub_visual.fits'
-    outname = 'single_SER/input_SER.fits'
-
-    master = Table.read(input)
-    # default entries
-    table = master['IAUNAME', 'PID', 'AID'].copy()
-    # change names for bdfitter
-    table['IAUNAME'].name = 'NAME'
-    table['PID'].name = 'PARENT_ID'
-    table['AID'].name = 'ATLAS_ID'
-
-    Nrows = len(master)
-    SER_VAL = Column(
-            name='SER_VAL',
-            data=array([[1, 10, 4, 0.7, 0, 0, 0, 0]]*Nrows).astype(float))
-    SER_FIX = Column(
-            name='SER_FIX',
-            data=array([[0, 0, 0, 0, 1, 0, 0, 0]]*Nrows))
-    table.add_columns([SER_VAL, SER_FIX])
-
-    table['SER_VAL'][:,pind['posang']] = deg2rad((master['SERSIC_PHI'].data + 90.) % 360.)
-    table['SER_VAL'][:,pind['ratio']] = master['SERSIC_BA'].data
-    table['SER_VAL'][:,pind['Reff']] = master['SERSIC_TH50'].data / 0.396
-    table['SER_VAL'][:,pind['center_x']] = master['XCEN'].data
-    table['SER_VAL'][:,pind['center_y']] = master['YCEN'].data
-
-    table.write(outname)
+    t = InputTable(input)
+    t.add_profile('SER', 1)
+    t.set_values_from_NSA('SER', 0)
+    t.write(outname)
 
 
-def single_DVC_sdss_psf_test():
+def single_DVC(input, outname):
     """
-    generate input table for single De Vauc profile for a handful of hand-picked
-    galaxies that are well-contained in a single SDSS field 
+    generate input table for single de Vaucouleurs profile
 
-    inputtable : str
+    input : str
         input table name; should be part of NSA catalog in FITS format
     outname : str
         output table name
     """
-    # this will be arguments at some point
-    input = 'SampleZMprobaEllSub_visual.fits'
-    outname = 'test_sdss_psf/input_DVC.fits'
-
-    master = Table.read(input)  #[[0,1,6,7,17,21,23,26,29,32,33,34,46,48]]
-    # default entries
-    table = master['IAUNAME', 'PID', 'AID', 'RERUN',
-                    'RUN', 'CAMCOL', 'FIELD', 'XPOS', 'YPOS'].copy()
-    # change names for bdfitter
-    table['IAUNAME'].name = 'NAME'
-    table['PID'].name = 'PARENT_ID'
-    table['AID'].name = 'ATLAS_ID'
-
-    Nrows = len(master)
-    DVC_VAL = Column(
-            name='DVC_VAL',
-            data=array([[1, 10, 4, 0.7, 0, 0, 0, 0]]*Nrows).astype(float))
-    DVC_FIX = Column(
-            name='DVC_FIX',
-            data=array([[0, 0, 1, 0, 1, 0, 0, 0]]*Nrows))
-    table.add_columns([DVC_VAL, DVC_FIX])
-
-    table['DVC_VAL'][:,pind['posang']] = deg2rad((master['SERSIC_PHI'].data + 90.) % 360.)
-    table['DVC_VAL'][:,pind['ratio']] = master['SERSIC_BA'].data
-    table['DVC_VAL'][:,pind['Reff']] = master['SERSIC_TH50'].data / 0.396
-    table['DVC_VAL'][:,pind['center_x']] = master['XCEN'].data
-    table['DVC_VAL'][:,pind['center_y']] = master['YCEN'].data
-
-    table.write(outname)
+    t = InputTable(input)
+    t.add_profile('DVC', 1)
+    t.set_values_from_NSA('DVC', 0)
+    # fix sersic index
+    t['DVC_VAL'][:,ip['n']] = 4.
+    t['DVC_FIX'][:,ip['n']] = 1.
+    t.write(outname, format='fits')
 
 
-def single_DVC_fixRe():
+def single_DVC_fixRe(input, outname):
     """
     generate input table for single De Vauc profile, with
     circularized effective radius fixed
@@ -165,194 +167,85 @@ def single_DVC_fixRe():
     outname : str
         output table name
     """
+    t = InputTable(input)
+    t.add_profile('DVC', 1)
+    t.set_values_from_NSA('DVC', 0)
+    # fix sersic index
+    t['DVC_VAL'][:,ip['n']] = 4.
+    t['DVC_FIX'][:,ip['n']] = 1.
+
+    # effective radius from FP
+    from fp import Bernardi03_r
+    sigma = t.srctab['VDISP']
+    flux_mag = nanomaggie2mag(t.srctab['PETROFLUX'][:,4])
+    z = t.srctab['Z_1']
+    t['DVC_VAL'][:,ip['Re']] = Bernardi03_r.r(sigma, flux_mag, z)/0.396 /t['DVC_VAL'][:,ip['q']]
+    t.write(outname)
+
+
+
+def double_SER(outname):
+    """
+    generate input table for double Sersic profile
+
+    inputtable : str
+        input table name; should be part of NSA catalog in FITS format
+    outname : str
+        output table name
+    """
     # this will be arguments at some point
     input = 'SampleZMprobaEllSub_visual.fits'
-    outname = 'single_DVC_fixRe/input_DVC.fits'
 
     master = Table.read(input)
     # default entries
-    table = master['IAUNAME', 'PID', 'AID'].copy()
+    table = master['IAUNAME', 'PID', 'AID', 'RERUN',
+                    'RUN', 'CAMCOL', 'FIELD', 'XPOS', 'YPOS'].copy()
     # change names for bdfitter
     table['IAUNAME'].name = 'NAME'
     table['PID'].name = 'PARENT_ID'
     table['AID'].name = 'ATLAS_ID'
 
-    Nrows = len(master)
-    DVC_VAL = Column(
-            name='DVC_VAL',
-            data=array([[1, 10, 4, 0.7, 0, 0, 0, 0]]*Nrows).astype(float))
-    DVC_FIX = Column(
-            name='DVC_FIX',
-            data=array([[0, 0, 1, 0, 1, 0, 0, 0]]*Nrows))
-    table.add_columns([DVC_VAL, DVC_FIX])
+    # rotation angle for SDSS PSF
+    angle = []
+    for row in master:
+        name = 'data/sdss_field/frame-r-%06i-%i-%04i.fits' % (
+            row['RUN'], row['CAMCOL'], row['FIELD'])
+        angle.append(fits.getheader(name)['SPA'])
+    table.add_column(Column(name='SPA', data=array(angle).astype(float)))
 
-    table['DVC_VAL'][:,pind['posang']] = deg2rad((master['SERSIC_PHI'].data + 90.) % 360.)
-    table['DVC_VAL'][:,pind['ratio']] = master['SERSIC_BA'].data
-    table['DVC_VAL'][:,pind['center_x']] = master['XCEN'].data
-    table['DVC_VAL'][:,pind['center_y']] = master['YCEN'].data
-    
-    table['DVC_VAL'][:,pind['Reff']] = master['SERSIC_TH50'].data / 0.396
+    # initial values
+    Nrows = len(master)
+    SER2_VAL = Column(
+            name='SER2_VAL',
+            data=array([[1, 10, 4, 0.7, 0, 0, 0, 0]*2]*Nrows).astype(float))
+    SER2_FIX = Column(
+            name='SER2_FIX',
+            data=array([[0, 0, 0, 0, 1, 0, 0, 0]*2]*Nrows))
+    table.add_columns([SER2_VAL, SER2_FIX])
+
+    # sersic index
+    table['SER2_VAL'][:,8+ip['n']] = 1.
+    # position angle
+    table['SER2_VAL'][:,ip['pa']] = deg2rad((master['SERSIC_PHI'].data + 90.) % 360.)
+    table['SER2_VAL'][:,8+ip['pa']] = deg2rad((master['SERSIC_PHI'].data + 90.) % 360.)
+    # axis ratio
+    table['SER2_VAL'][:,ip['q']] = master['SERSIC_BA'].data
+    table['SER2_VAL'][:,8+ip['q']] = master['SERSIC_BA'].data
+    # effective radius
+    table['SER2_VAL'][:,ip['Re']] = master['SERSIC_TH50'].data / 0.396
+    table['SER2_VAL'][:,8+ip['Re']] = master['SERSIC_TH50'].data / 0.396 * 2.
+    # center
+    table['SER2_VAL'][:,ip['x']] = master['XCEN'].data
+    table['SER2_VAL'][:,ip['y']] = master['YCEN'].data
+    table['SER2_VAL'][:,8+ip['x']] = master['XCEN'].data
+    table['SER2_VAL'][:,8+ip['y']] = master['YCEN'].data
 
     table.write(outname)
 
-def make_input_two():
-    """
-    Generate input table for de Vauc + Sersic
-    """
-    from astropy import cosmology
-    cosmo = cosmology.FlatLambdaCDM(70., 0.3)
-    master = Table.read('SampleZMprobaEllSub_visual.fits')
 
-    # default entries
-    table = master['IAUNAME', 'PID', 'AID'].copy()
-    # change names for bdfitter
-    table['IAUNAME'].name = 'NAME'
-    table['PID'].name = 'PARENT_ID'
-    table['AID'].name = 'ATLAS_ID'
-
-    Nrows = len(master)
-    DVC_VAL = Column(
-            name='DVC_VAL',
-            data=array([[1, 10, 4, 0.7, 0, 0, 0, 0]]*Nrows).astype(float))
-    DVC_FIX = Column(
-            name='DVC_FIX',
-            data=array([[0, 1, 1, 0, 1, 0, 0, 0]]*Nrows))
-    # SER_VAL = Column(
-    #         name='SER_VAL',
-    #         data=array([[1, 10, 4, 0.7, 0, 0, 0, 0]]*Nrows).astype(float))
-    # SER_FIX = Column(
-    #         name='SER_FIX',
-    #         data=array([[0, 0, 1, 0, 1, 0, 0, 0]]*Nrows))
-    table.add_columns([DVC_VAL, DVC_FIX])
-
-    # posang
-    table['DVC_VAL'][:, 7] = deg2rad((master['SERSIC_PHI'].data + 90.) % 360.)
-    # centers
-    table['DVC_VAL'][:,5] = master['XCEN'].data
-    table['DVC_VAL'][:,6] = master['YCEN'].data
-    # q_ba
-    table['DVC_VAL'][:,3] = master['SERSIC_BA'].data
-
-    
-    # size using FP of Bernardi+03 and Petrosian mag
-    petroflux = master['PETROFLUX'][:,4] * 3.631e-6   # Jy
-    sigma = master['VDISP'] 
-    L = petroflux * 4. * pi * (cosmo.luminosity_distance(master['Z_1']).value)  # erg/s/Hz
-    log_R0_kpc = -2.34*log10(sigma) + 1.5*log10(L) + 15.592
-    R0_pixels = 10**log_R0_kpc / (cosmo.angular_diameter_distance(master['Z_1']).value * 1000) \
-                / 206265. / 0.396  # circularized effective radius in pixels
-    table['DVC_VAL'][:,1] = R0_pixels
-
-    table.write('input_DVC.fits')
-
-    
-
-
-
-def main():
-    parser = argparse.ArgumentParser(description="Make input FITS table for bdfitter")    
-    parser.add_argument('catalog', help="sample catalog file")
-    parser.add_argument('config_file', help='configuration file')
-    args = parser.parse_args()
-
-    config = ConfigObj('test.cfg')
-
-    # default entries
-    master = Table.read(args.catalog)
-    table = master['IAUNAME', 'PID', 'AID'].copy()
-    # change names for bdfitter
-    table['IAUNAME'].name = 'NAME'
-    table['PID'].name = 'PARENT_ID'
-    table['AID'].name = 'ATLAS_ID'
-
-    # read profile info from config file
-    for profile in config.sections:
-        ncomponents = max(1, len(profile.sections))
-        val = np.zeros(ncomponents*8)
-        fix = np.zeros(ncomponents*8)
-
-        # initial values from NSA 2-dim sersic fit result
-        
-
-        # fixed parameters
-        if p.has_key('fix'):
-            for parname, parvalue in p['fix']:
-                val[pind[parname]] = parvalue
-                fix[pind[parname]] = 1.
-        # always fix shape to zero (*NOT USED*)
-        val[pind['shape']] = 0.
-        fix[pind['shape']] = 1.
-
-    
-    #now, if you don't want to use the default profiles with nothing held fixed
-    #you need to set the input parameters here
-    #the things to set are NAMEOFPROFILE_FIX, NAMEOFPROFILE_VAL
-    #there should be arrays of the size of the output 
-    #parameters (8x the number of profiles)
-    #The name of the profile is whatever you want, but you need to give it
-    #to fit_sample, so it can find the input parameters
-    #XXX_FIX is a boolean array which =1 for fixed parameters
-    #XXX_VAL is the input values, including fixed values
-    #if you don't fix the initial position of flux, default values will 
-    #be chosen by the code (based on image size)
-    #the parameters (in order) are:
-    #0--the surface brightness
-    #1 --the half light radius (refers to the semimajor axis)
-    #2 --Sersic index
-    #3 --axis ratio (minor/major)
-    #4 --shape of isophote, default is zero and fixed, 
-    #   but if you specify XXX_FIX you need to fix the 4th parameter
-    #5 --x coordinate of center of profile, be default multiple profiles 
-    #    share a center
-    #6 --y coordinate of center
-    #7 --position angle (radians counterclockwise from x-axis)
-    
-    #first profile will be de Vauc with only the isophote shape fixed
-    DVC_FIX = np.ndarray((len(names), 8))
-    DVC_VAL = np.ndarray((len(names), 8))
-    #second profile will be EXP+DVC with all the de Vauc. parameters except
-    #the normalization fixed
-    EXPDVC_FIX = np.ndarray((len(names), 16))
-    EXPDVC_VAL = np.ndarray((len(names), 16))
-    for i in range(len(names)):
-        DVC_FIX[i,:] = [0,0,1,0,1,0,0,0]
-        #you need to pick starting values for the size, and the axis ratio
-        #starting values for the surface brightness and the position will
-        #be set in the code, don't set the flux to zero, as the code
-        #just rescales values (so can't rescale 0)
-        DVC_VAL[i,:] = [1.0,10.,4.0,0.7,0.0,0.0,0.0,0.1]
-        #for two component fits, always but the 'bulge' (smaller +higher sersic)
-        #profile first
-        EXPDVC_FIX[i,:] = [0,1,1,1,1,1,1,1,0,0,1,0,1,0,0,0]
-        #you'll have to source the fixed values from somewhere, either
-        #based on the radius, or based on previously fitting the profiles
-        EXPDVC_VAL[i,:] = [1.0, 78.9, 4.0, 0.75, 0.0, 715.217, 725.011, 2.1801,
-                            0.0, 100.0, 1.0, 0.75, 0.0, 0.0, 0.0, 2.2]
-                            
-         #it might be good to have different input scripts, for example
-         #you could make 1 input file to fit the sersic/dvc profile and after
-         #that runs, make another file for the two component fits, which 
-         #takes the olds fits as inputs for the VALs arrays
-    
-
-
-    
-    col4 = pyfits.Column(name='DVC_FIX', format='8D', array=DVC_FIX)
-    col5 = pyfits.Column(name='DVC_VAL', format='8D', array=DVC_VAL)
-    col6 = pyfits.Column(name='EXPDVC_FIX', format='16D', array=EXPDVC_FIX)
-    col7 = pyfits.Column(name='EXPDVC_VAL', format='16D', array=EXPDVC_VAL)
-    
-    cols = pyfits.ColDefs([col1, col2, col3, col4,
-                           col5, col6, col7])
-    
-    hdu = pyfits.new_table(cols)
-    hdu.writeto('sample_input.fits', clobber=True)
-    
-   
-    return 0
 
 
 
 
 if __name__=='__main__':
-    single_DVC_sdss_psf_test()
+    single_DVC('testsample_vis.fits', 'test/dvc/input_DVC.fits')
