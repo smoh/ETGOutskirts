@@ -25,11 +25,13 @@ class FundamentalPlane(object):
                     + self.c)/(1+2*self.b))      
         return R0_kpc
 
-    def r(self, sigma, flux_mag, z):
+    def r0(self, sigma, flux_mag, z):
+        """
+        Calculate effective circular size in arcsec
+        """
         DA = cosmo.angular_diameter_distance(z).value * 1000. / 206265.
         return self.R0(sigma, flux_mag, z) / DA
     
-
 
 Bernardi03_r = FundamentalPlane(a=1.17, b=-0.75, c=-8.022)
 

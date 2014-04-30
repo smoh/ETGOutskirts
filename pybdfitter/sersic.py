@@ -10,6 +10,9 @@ def nanomaggie2mag(nnmg):
     """ nnmg : flux in nanomaggie """
     return 22.5 - 2.5*log10(nnmg)
 
+def mag2nanomaggie(mag):
+    return 10**((22.5 - mag)/2.5)
+
 # parameter index dictionary as used in bdfitter
 ip = {
     'Ie': 0,
