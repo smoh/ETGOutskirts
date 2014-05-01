@@ -31,9 +31,22 @@ def build_command_str(input, profile, start, end, outdir, datadir='data', imgdir
         cmd += ", imgdir='{:s}'".format(imgdir + '/')
     return cmd
 
+def check_IDL():
+    """ return 1 if no IDL command found """
+    proc = subprocess.Popen(
+        ["which", "idl"],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    proc.communicate()
+    return proc.returncode
+
+
 def fit_sample(input, profile, start, end, outdir, datadir='data', imgdir=None,
         filter='r', residual=True, debug=True, savepsf=False,
         stdout=None, stderr=None):
+    
+    if check_IDL():
+        print "NO IDL found. Nothing else done"
+        return 0
     
     # prepare directories
     mkdir_p(outdir)
@@ -45,8 +58,9 @@ def fit_sample(input, profile, start, end, outdir, datadir='data', imgdir=None,
     cmd = build_command_str(input, profile, start, end, outdir,
             datadir=datadir, imgdir=imgdir, filter=filter, residual=residual,
             debug=debug, savepsf=savepsf)
-    with open(stdout, 'w') as stdout:
-        subprocess.call(["idl", "-e", cmd], stdout=stdout)
+    subprocess.call(["idl", "-e", cmd])
+    # with open(stdout, 'w') as stdout:
+    #     subprocess.call(["idl", "-e", cmd], stdout=stdout)
 
     outTable = outdir + '/RAWFIT%05i.%05i.fits' % (start, end)
     return outTable
