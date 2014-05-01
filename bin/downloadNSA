@@ -36,12 +36,14 @@ def downloadfile(url, savename=None, prefix=None):
             with open(localname, "wb") as local_file:
                 local_file.write(f.read())
                 local_file.close()
-
+        return 1
     #handle errors
     except HTTPError, e:
         print "HTTP Error:", e.code, url
+        return 0
     except URLError, e:
         print "URL Error:", e.reason, url
+        return 0
 
 
 def download_sdss_psffile(rerun, run, camcol, field, prefix):
@@ -106,9 +108,12 @@ def downloadNSA(subdir, iauname, pid, aid, prefix, ivar=True, psf=False):
 
     url = 'http://sdss.physics.nyu.edu/mblanton/v0/detect/v0_1/%s/' % (subdir)
 
-    downloadfile(url + 'atlases/%s/%s-%s-atlas-%s.fits.gz' % (
-        pid, iauname, pid, aid), prefix=prefix + '/images')
-    downloadfile(url + '%s-pimage.fits.gz' % (iauname), prefix=prefix + '/pimages')
+    if not downloadfile(url + 'atlases/%s/%s-%s-atlas-%s.fits.gz' % (
+        pid, iauname, pid, aid), prefix=prefix + '/images'):
+        print '%s download failed' % (iauname)
+    if not downloadfile(
+        url + '%s-pimage.fits.gz' % (iauname), prefix=prefix + '/pimages'):
+        print '%s download failed' % (iauname)
     # downloadfile(url+'atlases/%s/%s-nimage-%s.fits.gz' % (pid, iauname, pid), prefix=prefix + '/nimages')
     
     if ivar:
