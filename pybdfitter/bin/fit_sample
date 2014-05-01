@@ -4,7 +4,7 @@
 import argparse
 import datetime
 
-from ..pybdfitter.fitter import fit_sample
+from pybdfitter.fitter import fit_sample
 
 parser = argparse.ArgumentParser(description='run fit_sample on input file')
 parser.add_argument('input',
