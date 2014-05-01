@@ -1,12 +1,10 @@
-""" Script to plot fitting results """
+""" Plotting fitting results """
 
 from pylab import *
 from astropy.table import Table
 from astropy.io import fits
-import aplpy
 from asinh_norm import AsinhNorm
 from matplotlib.colors import LogNorm
-import numpy as np
 import math as m
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
@@ -20,7 +18,7 @@ def add_ellipse(ax, x, y, rx, ry, pa,**kwargs):
     """
     Add an ellipse to the axes
 
-    ax : axes
+    ax : matplotlib axes instance
     x, y : center
     rx, ry : semi- major, minor axis
     pa : radian from x axis counter-clockwise
@@ -167,79 +165,95 @@ class Ellipse:
         return inside
 
 
-def FluxAnnulus(image, r_in, r_out, q, phi, x0, y0 ):
+def calc_annulus(image, r_in, r_out, q, phi, x0, y0):
     """
-    determine the total flux within an annulus
-    also return the mean and the variance
-    """
-    #repixel by 1
-    rp= 1.
-    #image_64 = repixel(np.asarray(image), 1/rp )
-    image_64 = image
-    norm = np.sum(image)/np.sum(image_64)
+    Determine the sum, mean, variance of values within a elliptical annulus
 
-    #image_64 = image
-    x,y = np.meshgrid( np.arange(np.shape(image_64)[1]*1.0),
-               np.arange(np.shape(image_64)[0]*1.0) )
-    ell1 = ~(Ellipse(r_in*rp, q, rp*x0, rp*y0, phi ).is_inside(x,y))
-    ell2 = Ellipse(r_out*rp, q, rp*x0, rp*y0, phi).is_inside(x,y)
+    image : 2-d numpy array
+    r_in : inner semi-major axis
+    r_out : outer semi-major axis
+    q : major/minor axis ratio
+    phi : position angle, radian from x axis counter-clockwise
+    x0, y0 : center of ellipse
+
+    Returns (total, mean, variance, area)
+    area is -1 if total = 0
+    """
+    Nx, Ny = shape(image)
+    x, y = meshgrid(arange(Ny), arange(Nx))
+    ell1 = ~(Ellipse(r_in, q, x0, y0, phi).is_inside(x, y))
+    ell2 = Ellipse(r_out, q, x0, y0, phi).is_inside(x ,y)
     annulus = ell1 & ell2
-    if ~annulus.any():
+    if not annulus.any():
         return (0.0,0.0,0.0,-1.0)
-    totalFlux,meanFlux,varFlux,area=(0.0,0.0,0.,0.)
-    totalFlux = np.sum(image_64[annulus])*norm
-    area = (image_64[annulus].size/(rp*rp))
-    meanFlux = np.mean(image_64[annulus]*norm)
-    varFlux = np.var(image_64[annulus]*norm)
-    if(totalFlux == 0.0): area = -1.0
-    return (totalFlux, meanFlux, varFlux, area)
+    totalflux, meanflux, varflux, area = 0., 0., 0., 0.
+    totalflux = sum(image[annulus])
+    area = image[annulus].size
+    meanflux = mean(image[annulus])
+    varflux = var(image[annulus])
+    if totalflux == 0.0: area = -1.0
+    return (totalflux, meanflux, varflux, area)
                
 
-def getProfile(image, reff, q, phi, x0, y0, limit=5):
-    """
+class GalaxyImage(object):
+    """class for plotting image"""
+    def __init__(self, imagename, p):
+        """
+        Initialise galaxy image class
+
+        imagename : FITS filename
+        p : sersic.Sersic instance
+        """
+        self.imagename = imagename
+        self.p = p
+        self.image = fits.getdata(imagename)
+
+    def sb(self, step=5, limit=5):
+        """
+        surface brightness
+        """
+        r = 0.
+        numstep = int(limit*self.p.reff/step)
+        mult_factor = 1.
+        profile = np.recarray((numstep,),
+                    dtype=[('radius',float),
+                            ('totalflux', float),
+                            ('mnflux',float),
+                            ('stdflux',float),
+                            ('sb', float),
+                            ('area', float)])
+        for i in range(numstep):
+            profile[i].radius = r + 0.5*step
+            (tf, mf, vf, area) = calc_annulus(image, r, r+step, q, phi, x0, y0)
+            profile[i].mnflux = mf
+            profile[i].stdflux = m.sqrt(vf)
+            profile[i].sb = tf/area
+            profile[i].area = area
+            profile[i].totalflux = tf
+            r = r + step
+            step *= mult_factor
+
+        return profile
     
-    limit : the limit of radial profile in unit of reff
+
+
+def showim(ax, image, norm=None):
     """
+    show single image with colorbar on the bottom
 
-    # step = min(max(0.05*reff,0.8),1.5)
-    # r=0.0
-    # numstep=30
-    # high = 4.*reff
-    # mult_factor = 10.**(np.log10(high-step)/numstep)
+    ax : matplotlib axes instance
+    image : 2-d image array
 
-    step = 5
-    r = 0.0
-    # numstep = int(floor( min(np.abs([x0, image.shape[1]-reff, y0, image.shape[0]-reff]))/step))
-    if limit > 0:
-        numstep = int(limit*reff/step)
-    elif limit == -1:
-        rmax = (min(image.shape)-50)/2.
-        numstep = int(rmax/step)
-    mult_factor = 1.
- 
-    profile = np.recarray((numstep,),dtype=[('rad',float),
-                        ('totalflux', float),
-                        ('mnflux',float),
-                        ('stdflux',float),
-                        ('sb', float),
-                        ('area', float)])
-    for i in range(numstep):
-        profile[i].rad = r + 0.5*step
-        (tf, mf, vf, area) = FluxAnnulus(image, r, r+step, q, phi, x0, y0)
-        profile[i].mnflux = mf
-        profile[i].stdflux = m.sqrt(vf)
-        profile[i].sb = tf/area
-        profile[i].area = area
-        profile[i].totalflux = tf
-        r = r + step
-        step *= mult_factor
+    Keywords
+    --------
+    norm : color normalization. Either Normalize instance or one of following
+        'asinh' : arcsinh
+        'log' : LogNorm
+        none : default
 
-    return profile
-    
-
-
-def showim(ax, image, norm=norm):
-    """ show single image """
+    Returns
+    tuple of image axes, colorbar axes
+    """
 
     divider = make_axes_locatable(ax)
     ax_cb = divider.append_axes("bottom", size="5%", pad=0.05)
@@ -256,7 +270,7 @@ def showim(ax, image, norm=norm):
             norm = LogNorm()
         if norm is None:
             pass
-
+    print norm
     im = ax.imshow(image, cmap=cm.gray_r, 
             norm=norm,
             interpolation='nearest',
