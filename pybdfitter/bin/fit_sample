@@ -2,18 +2,9 @@
 """ wrapper for running fit_sample.pro """
 
 import argparse
-from subprocess import call
 import datetime
 
-def mkdir_p(path):
-    import os, errno
-    try:
-        os.makedirs(path)
-    except OSError as exc:
-        if exc.errno == errno.EEXIST and os.path.isdir(path):
-            pass
-        else: raise
-
+from ..pybdfitter.fitter import fit_sample
 
 parser = argparse.ArgumentParser(description='run fit_sample on input file')
 parser.add_argument('input',
@@ -40,29 +31,10 @@ parser.add_argument('-i', '--imgdir', type=str,
                         help='image directory')
 args = parser.parse_args()
 
-profiles_str = '{' + '%s' % (args.profile)+'}'
-# output directories
-mkdir_p(args.outdir)
-if args.res:
-    mkdir_p(args.outdir + '/models')
-if args.savepsf:
-    mkdir_p(args.datadir + '/sdss_psf')
-
-
-# build command
-idl_command = "fit_sample, '{:s}', {:d}, {:d}, '{:s}', '{:s}'".format(
-    args.input, args.start, args.end+1, args.outdir+'/', args.datadir+'/')
-idl_command += ', profiles={:s}'.format(profiles_str)
-if args.res:
-    idl_command += ', /residuals'
-if args.debug:
-    idl_command += ', /debug'
-if args.savepsf:
-    idl_command += ', /savepsf'
-if args.imgdir:
-    idl_command += ", imgdir='{:s}'".format(args.imgdir + '/')
 
 print datetime.datetime.now()
-print idl_command
 
-# call(["idl", "-e", idl_command])
+out = fit_sample(
+    args.input, args.profile, args.start, args.end, args.outdir,
+    datadir=args.datadir, imgdir=args.imgdir, filter=args.filter,
+    residual=args.res, debug=args.debug, savepsf=args.savepsf)
