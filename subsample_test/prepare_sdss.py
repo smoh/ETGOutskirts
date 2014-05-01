@@ -20,6 +20,7 @@ from astropy.table import Table
 from astropy.io import fits
 from astropy import wcs
 from pylab import *
+import uuid
 import logging, os
 
 from mpltools import mkdir_p
@@ -162,7 +163,8 @@ def save_ivar(filter, run, camcol, field, datadir):
 
     ivar_out = sdss_field_name.replace('sdss_field', 'sdss_ivar')
     print ivar_out, 'saved'
-    hdu_ivar = fits.PrimaryHDU(data=ivar, header=hdr).writeto(ivar_out, clobber=True)
+    fits.PrimaryHDU(
+        data=ivar, header=hdr).writeto(ivar_out, clobber=True, output_verify='ignore')
 
 
 
@@ -177,8 +179,11 @@ def reproject2child(filter, run, camcol, field, iauname, pid, aid, datadir):
     montage.mGetHdr(datadir+'/nsa/images/'+child, hdrout, hdu=child_ext)  # extension important
     imgname = datadir+'/raw/'+iauname+'.fits'
     ivarname = datadir+'/ivar/'+iauname+'.fits'
-    montage.reproject(sdss_field_name, imgname, header=hdrout, exact_size=True)
-    montage.reproject(sdss_ivar_name, ivarname, header=hdrout, exact_size=True)
+    montage.reproject(sdss_field_name, imgname, header=hdrout, exact_size=True,
+                        silent_cleanup=True)
+    montage.reproject(sdss_ivar_name, ivarname, header=hdrout, exact_size=True,
+                        silent_cleanup=True)
+    montage.mFixNan(ivarname, ivarname, nan_value=0.)
     print imgname, 'saved'
     print ivarname, 'saved'
 
@@ -192,23 +197,35 @@ def reproject2child(filter, run, camcol, field, iauname, pid, aid, datadir):
 
 if __name__ == '__main__':
     
-    master = Table.read('testsample.fits')    
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("catalog", type=str, help="NSA catalog FITS")
+    parser.add_argument("datadir", type=str, help="data directory")
+    parser.add_argument("-r", type=int, nargs=2,
+                        help="-r low high; set to -1 for end")
+    args = parser.parse_args()
+
+    master = Table.read(args.catalog)    
     filter = 'r'
     child_ext = 2
-    datadir = 'data_testsample'
+    datadir = args.datadir
 
     # prepare directories
     for subdir in ['sdss_ivar', 'hdr', 'raw', 'masked', 'deblended', 'ivar']:
         mkdir_p(datadir + '/' + subdir)
 
+    if args.r:
+        low, high = args.r
+        if high == -1:
+            high = len(master)
+    else:
+        low, high = 0, len(master)
 
-    for igal in range(len(master)):
-    # for igal in [0, 1, 15]:
-
+    for igal in range(low, high):
         run, camcol, field = master['RUN', 'CAMCOL', 'FIELD'][igal].data
         iauname, pid, aid = master['IAUNAME', 'PID', 'AID'][igal].data
         ra, dec = master['RA_1', 'DEC_1'][igal].data  # galaxy ra, dec in degrees
-
+        print igal, iauname
         # save inverse variance of the frame image
         save_ivar(filter, run, camcol, field, datadir)
         # reproject frame/ivar to NSA child
@@ -249,11 +266,13 @@ if __name__ == '__main__':
         # save images
         img_masked = img[0].data * mask
         img[0].data = img_masked
-        img.writeto(datadir+'/masked/'+iauname+'.fits', clobber=True) #, data=img_masked)
+        img.writeto(datadir+'/masked/'+iauname+'.fits', clobber=True,
+                    output_verify='ignore') #, data=img_masked)
         img_deblended = (img[0].data - extra) * mask
         img_deblended[isnan(img_deblended)] = 0  # nan to zero
         img[0].data = img_deblended
-        img.writeto(datadir+'/deblended/'+iauname+'.fits', clobber=True)#, data=img_deblended)
+        img.writeto(datadir+'/deblended/'+iauname+'.fits', clobber=True,
+                    output_verify='ignore')
 
         img.close()
         pimg.close()
