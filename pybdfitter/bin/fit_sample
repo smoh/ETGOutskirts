@@ -65,4 +65,4 @@ if args.imgdir:
 print datetime.datetime.now()
 print idl_command
 
-call(["idl", "-e", idl_command])
+# call(["idl", "-e", idl_command])
