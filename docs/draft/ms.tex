@@ -2,11 +2,14 @@
 
 % packages
 \usepackage{natbib}
+\usepackage{amsmath}
 
 
 
 % new commands go here
 \newcommand{\HI}{\ion{H}{1}}
+
+\newcommand{\sersic}{S\'ersic}
 
 
 \begin{document}
@@ -34,12 +37,26 @@ Introduction...
 The effective circular size $R_0$ in kpc is related to $r$ by
 the angular diameter distance $D_A$ (kpc/arcsec):
 
-\begin{eqnarray}
-    \nonumber r &=& R_0 / D_A \\
-    \log R_0 &=& a \log \sigma - \frac{b}{2.5} \mu_0 + c \\
-    \nonumber \log R_0 &=& \frac{1}{1 + 2 b} \left[ a\log \sigma
+\begin{align}
+    r &= R_0 / D_A \\
+    \log R_0 &= a \log \sigma - \frac{b}{2.5} \mu_0 + c \\
+    \log R_0 &= \frac{1}{1 + 2 b} \left[ a\log \sigma
         - \frac{b}{2.5} \left(m + 2.5\log \frac{2\pi}{D_A^2} - 10 \log (1+z)\right)
-        + c \right]
-\end{eqnarray}
+        + c \right]\\
+\end{align}
+With $b \sim -0.75$, $\log R_0 \propto -0.6 m$
+
+
+The \sersic{} profile
+
+\begin{align}
+    I(R) &= I_e \exp \left[ -b_n \left( \frac{R}{R_e} \right)^{1/n} - 1 \right]
+\end{align}
+We take analytic form of $b_n$ from Lima-Neto et al. 1999
+\begin{align}
+    b_n &= n \exp\left(0.6950 - \frac{0.1789}{n}\right)
+\end{align}
+
+
 
 \end{document}
