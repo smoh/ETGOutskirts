@@ -8,8 +8,10 @@ from matplotlib.colors import LogNorm
 import math as m
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from sersic import Sersic
+from sersic import Sersic, NSersic, sersic2d
 import mpltools
+from itertools import cycle
+
 
 rc('savefig', dpi=80)
 
@@ -30,10 +32,10 @@ def add_ellipse(ax, x, y, rx, ry, pa,**kwargs):
     if not kwargs.has_key('ec'):
         kwargs['ec'] = 'c'
     if not kwargs.has_key('lw'):
-        kwargs['lw'] = 2
+        kwargs['lw'] = 1.
 
     from matplotlib.patches import Ellipse
-    e = Ellipse(xy=(x, y), width=2*rx, height=2*ry, angle=rad2deg(pa)+90.,
+    e = Ellipse(xy=(x, y), width=2*rx, height=2*ry, angle=rad2deg(pa),
                 **kwargs)
     ax.add_artist(e)
 
@@ -193,48 +195,35 @@ def calc_annulus(image, r_in, r_out, q, phi, x0, y0):
     varflux = var(image[annulus])
     if totalflux == 0.0: area = -1.0
     return (totalflux, meanflux, varflux, area)
-               
 
-class GalaxyImage(object):
-    """class for plotting image"""
-    def __init__(self, imagename, p):
-        """
-        Initialise galaxy image class
 
-        imagename : FITS filename
-        p : sersic.Sersic instance
-        """
-        self.imagename = imagename
-        self.p = p
-        self.image = fits.getdata(imagename)
+def get_profile(image, q, phi, x0, y0, step=5, limit=100):
+    """
+    Get elliptical annulus profile
+    """
+    r = 0.
+    numstep = int(limit/step)
+    mult_factor = 1.
+    profile = np.recarray((numstep,),
+                dtype=[('radius',float),
+                        ('totalflux', float),
+                        ('mnflux',float),
+                        ('stdflux',float),
+                        ('sb', float),
+                        ('area', float)])
+    for i in range(numstep):
+        profile[i].radius = r + 0.5*step
+        (tf, mf, vf, area) = calc_annulus(image, r, r+step, q, phi, x0, y0)
+        profile[i].mnflux = mf
+        profile[i].stdflux = m.sqrt(vf)
+        profile[i].sb = tf/area
+        profile[i].area = area
+        profile[i].totalflux = tf
+        r = r + step
+        step *= mult_factor
 
-    def sb(self, step=5, limit=5):
-        """
-        surface brightness
-        """
-        r = 0.
-        numstep = int(limit*self.p.reff/step)
-        mult_factor = 1.
-        profile = np.recarray((numstep,),
-                    dtype=[('radius',float),
-                            ('totalflux', float),
-                            ('mnflux',float),
-                            ('stdflux',float),
-                            ('sb', float),
-                            ('area', float)])
-        for i in range(numstep):
-            profile[i].radius = r + 0.5*step
-            (tf, mf, vf, area) = calc_annulus(image, r, r+step, q, phi, x0, y0)
-            profile[i].mnflux = mf
-            profile[i].stdflux = m.sqrt(vf)
-            profile[i].sb = tf/area
-            profile[i].area = area
-            profile[i].totalflux = tf
-            r = r + step
-            step *= mult_factor
+    return profile
 
-        return profile
-    
 
 
 def showim(ax, image, norm=None):
@@ -270,7 +259,6 @@ def showim(ax, image, norm=None):
             norm = LogNorm()
         if norm is None:
             pass
-    print norm
     im = ax.imshow(image, cmap=cm.gray_r, 
             norm=norm,
             interpolation='nearest',
@@ -282,6 +270,108 @@ def showim(ax, image, norm=None):
         return ax, cb
     except:
         pass
+
+
+class DataContainer(object):
+    """ DataContainer class """
+    def __init__(self, img, model, p):
+        """
+        Load data, model and residual images
+        """
+        self.img = fits.getdata(img)
+        self.model = fits.getdata(model)
+        self.residual = self.img - self.model
+        self.param = NSersic(p)
+        
+class Plotter(object):
+    """plotting fitting result"""
+    def __init__(self, output, datadir='data', modeldir='models'):
+        """
+        Initialize Plotter class
+
+        output : str, output filename (RAWFITXXX.fits)
+        datadir : data directory
+        modeldir : models directory
+        """
+        self.output = output
+        self.datadir = datadir
+        self.modeldir = modeldir
+        self.result = Table.read(output)
+        self._get_profile_name()
+
+    def _get_profile_name(self):
+        # find out profile name
+        fitcol = [k for i, k in enumerate(self.result.colnames) if 'FIT_' in k]
+        assert len(fitcol) == 1, "More than one profile found!"
+        self.profile_name = fitcol[0].split('FIT_')[1]
+
+    def __getitem__(self, index):
+        return DataContainer(
+             self.datadir+'/deblended/%s.fits' % (self.result[index]['NAME']),
+             self.modeldir+'/M%s.fits' % (self.result[index]['NAME']),
+             self.result[index]['FIT_'+self.profile_name])
+
+    def show_images(self, index):
+        """
+        Show data, model, and residual image
+        """
+        img = self[index].img
+        model = self[index].model
+        residual = img - model
+        sersic = NSersic(self.result[index]['FIT_'+self.profile_name])
+
+        fig = figure(figsize=(12,4))
+        gImages = GridSpec(1, 3)
+        gImages.update(left=0.05, right=0.97, top=0.9, bottom=0.1, wspace=0.02)
+        # color normalization
+        norm = AsinhNorm(vmin=percentile(img.flatten(), 10), vmax=percentile(img.flatten(),90))
+        # data image
+        ax1 = subplot(gImages[0,0])
+        ax1, ax1_cb = showim(ax1, img, norm=norm)
+        # best-fit model
+        ax2 = subplot(gImages[0,1], sharex=ax1, sharey=ax1)
+        ax2, ax2_cb = showim(ax2, model, norm=norm)
+        # residual image
+        ax3 = subplot(gImages[0,2], sharex=ax1, sharey=ax1)
+        ax3, ax3_cb = showim(ax3, residual, norm=norm)
+        # highlight effective radius of each component
+        colors = cycle(['#3CF5C1','#F53C70'])
+        for i in range(sersic.nprofiles):
+            add_ellipse(ax3, sersic[i].x, sersic[i].y, sersic[i].Re,
+                        sersic[i].Re*sersic[i].q, sersic[i].pa,
+                        ec=colors.next())
+        # hide ticklabels
+        mpltools.hide_tick_labels(ax2, 'y')
+        mpltools.hide_tick_labels(ax3, 'y')
+        return fig
+
+    def show_profile(self, index):
+        """
+        Show elliptical annulus profile
+        """
+        sersic = NSersic(self.result[index]['FIT_'+self.profile_name])
+
+        fig = figure()
+        gProfile = GridSpec(4, 1)
+        ax = subplot(gProfile[:3,0])
+        ax_res = subplot(gProfile[3,0], sharex=ax)
+        fig.add_axes(ax_res)
+
+        imglist = [self[index].img, self[index].model]
+        # add model profiles
+        x, y = meshgrid(arange(self[index].img.shape[0]),
+                         arange(self[index].img.shape[1]))
+        for i in range(sersic.nprofiles):
+            imglist.append(sersic2d(x, y, sersic[i].p))
+        clist   = cycle(['k', 'r', 'purple', 'm'])
+        for im in imglist:
+            p = get_profile(
+                        im, 1., 0.,
+                        sersic[0].x, sersic[0].y)#, limit=sersic[0].Re*5)
+            ax.plot(p.radius, p.mnflux,
+                    c=clist.next())
+        
+
 
 
 def plot_residual(iauname, param_fit, datadir, modeldir,
