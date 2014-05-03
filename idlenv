@@ -3,10 +3,9 @@ shell_old=$shell
 export shell=bash
 export SHELL=bash
 #setup sloan stuff
-echo setup called
 source /u/dss/products/eups/bin/setups.sh
-setup -v idlutils
-setup -v photoop v1_9_11
+setup idlutils
+setup photoop v1_9_11
 #setup -v idl
 #I think version 8_2 also works, so feel free to change the above
 # set the shell to original
