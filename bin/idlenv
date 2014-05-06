@@ -1,0 +1,4 @@
+#!/bin/bash
+
+source ~/projects/ETGOutskirts/idlenv
+module load idl
