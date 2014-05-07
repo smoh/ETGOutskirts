@@ -41,9 +41,9 @@ class Sersic(object):
         self.pa = params[7]
         self.p = params
 
-    def __repr__(self):
-        return '\n'.join([ "%2s = %g" % (n, self.__getattribute__(n)) \
-                for n in Sersic.param_names ])
+    # def __repr__(self):
+    #     return '\n'.join([ "%2s = %g" % (n, self.__getattribute__(n)) \
+    #             for n in Sersic.param_names ])
     
     @property
     def Ro(self):
@@ -84,12 +84,9 @@ class NSersic(object):
     def __getitem__(self, key):
         return self.profiles[key]
 
-    def __repr__(self):
-        s = ''
-        for i in range(self.nprofiles):
-            s += 'Component %i\n' % (i)
-            s += self[i].__repr__()+'\n'
-        return s
+    def info(self):
+        s = "NComponents = %4i" % (self.nprofiles)
+        print s
 
 
 def radius(param, x, y):
