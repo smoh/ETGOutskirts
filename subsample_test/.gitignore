@@ -3,3 +3,4 @@ single_SER
 test_sdss_psf
 .htaccess
 .htpasswd
+*.log
