@@ -36,7 +36,7 @@ in the NSA catalog with the probability of begin Elliptical above 0.7 (Huertas-C
     - 3: bad deblending due to astrometry (N=24)
     - 4: bad deblending (N=61)
 * I was mainly concerned with coming up with the cleanest sample to test various things, so it is likely that I was too conservative on my definition of image being 'OK'.
-* I checked that this subsample of cleanset images do not have a very different distribution in redshift or photometric parameter space (using those from NSA single Sersic fitting), although I tend to throw out more of larger/brighter galaxies [Notebook:ImageQuality](http://nbviewer.ipython.org/github/smoh/ETGOutskirts/blob/master/subsample_test/ImageQuality.ipynb)
+* I checked that this subsample of cleanset images do not have a very different distribution in redshift or photometric parameter space (using those from NSA single Sersic fitting), although I tend to throw out more of larger/brighter galaxies [Notebook:ImageQuality](http://nbviewer.ipython.org/url/www.astro.princeton.edu/~semyeong/etg/ImageQuality.ipynb)
 
 ## Fitting
 
@@ -51,11 +51,11 @@ So far, I have tried the following models. All parameters (except indices) are f
         + comp 1 : n=4(fixed), Re from NSA
         + comp 2 : n=1(fixed), Re twice of comp 1, Ie 0.1 of comp 1
 4. De Vaucouleurs (FP) + Exponential [images](fit/dvcexp/images.html)
-    * Initially I do a run of model 3 to get reasonable values for using the FP. From the second iteration, I use the sigma and surface brightness of the De Vaucouleurs component and the Bernardi+03 FP to calculate the new effective radius, and _fix_ it to that value. This is cell In[4] in [Notebook:FixReTest](http://nbviewer.ipython.org/github/smoh/ETGOutskirts/blob/master/subsample_test/FixReTest.ipynb).
+    * Initially I do a run of model 3 to get reasonable values for using the FP. From the second iteration, I use the sigma and surface brightness of the De Vaucouleurs component and the Bernardi+03 FP to calculate the new effective radius, and _fix_ it to that value. This is cell In[4] in [Notebook:FixReTest](http://nbviewer.ipython.org/url/www.astro.princeton.edu/~semyeong/etg/FixReTest.ipynb).
 
 ### Single component models
 
-[Notebook:SingleComponent](http://nbviewer.ipython.org/github/smoh/ETGOutskirts/blob/master/subsample_test/SingleComponent.ipynb)
+[Notebook:SingleComponent](http://nbviewer.ipython.org/url/www.astro.princeton.edu/~semyeong/etg/SingleComponent.ipynb)
 
 * As a check, I plot the Fundamental Plane relation using the parameters from de Vaucouleurs, which are supposed to have been used to _define_ the FP in the first place. We do see the relation with little offset (0.0034dex) and the 1-sigma scatter of 0.089 dex (~23%) in logR0
 * If I free the Sersic index,
@@ -68,12 +68,12 @@ which is indicative that the model tries to put more light at the center and/or 
 
 ### Double component models
 
-[Notebook:DVCEXP](http://nbviewer.ipython.org/github/smoh/ETGOutskirts/blob/master/subsample_test/DVCEXP.ipynb)
+[Notebook:DVCEXP](http://nbviewer.ipython.org/url/www.astro.princeton.edu/~semyeong/etg/DVCEXP.ipynb)
 
 * While the reduced chi^2 is not much of a discriminant, the chi^2 values are reduced by 10^3-10^4 in most of the cases, which, of course, is partly expected because of the increased number of free parameters.
 * Compared to model 1, Re of dV component is smaller as the Exp component models the light from outer part.
 * Interestingly, while dV component is generally smaller than that of model 1, this component seem to follow the same FP relation unlike the other, EXP component.
-* Model 4 tries to use the FP to constrain the size of the inner dV component. I only tested this for one galaxy J123948.37. In [Notebook:FixReTest](http://nbviewer.ipython.org/github/smoh/ETGOutskirts/blob/master/subsample_test/FixReTest.ipynb) I plot how the key parameters change for 20 iterations for dV component (red dot) and EXP component (blue line).
+* Model 4 tries to use the FP to constrain the size of the inner dV component. I only tested this for one galaxy J123948.37. In [Notebook:FixReTest](http://nbviewer.ipython.org/url/www.astro.princeton.edu/~semyeong/etg/FixReTest.ipynb) I plot how the key parameters change for 20 iterations for dV component (red dot) and EXP component (blue line).
     - First, you can see that dV component virtually stays the same until ~10 iterations, while the EXP component wanders around.
     - The size of the inner component does not really change, but because I _fixed_ the Re completely, it does increase slightly (by sub-pixel size) during the first 10 loops, and shows runaway to some parameter space because of what the EXP does in the meanwhile. Thus, what I think we should do is to stop the iteration when Re of dV component falls within some range the expected value.
     - From the fact that the dV component of model 3 ("free" DVC+EXP) follows the FP relation, I expect that for many of the cases, the loop will not go on for long.
