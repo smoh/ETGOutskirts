@@ -46,11 +46,11 @@ So far, I have tried the following models. All parameters (except indices) are f
     * initial conditions: fix Sersic index to 4
 2. single Sersic [images](fit/ser/images.html)
     * initial conditions: start Sersic index at 4
-3. De Vaucouleurs + Exponential
+3. De Vaucouleurs + Exponential [images](fit/dvcexp/images.html)
     * initial conditions
         + comp 1 : n=4(fixed), Re from NSA
         + comp 2 : n=1(fixed), Re twice of comp 1, Ie 0.1 of comp 1
-4. De Vaucouleurs (FP) + Exponential [images](fit/dvcexp/images.html)
+4. De Vaucouleurs (FP) + Exponential
     * Initially I do a run of model 3 to get reasonable values for using the FP. From the second iteration, I use the sigma and surface brightness of the De Vaucouleurs component and the Bernardi+03 FP to calculate the new effective radius, and _fix_ it to that value. This is cell In[4] in [Notebook:FixReTest](http://nbviewer.ipython.org/url/www.astro.princeton.edu/~semyeong/etg/FixReTest.ipynb).
 
 ### Single component models
