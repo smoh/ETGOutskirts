@@ -4,21 +4,42 @@
     a:visited {color: #0033ff;}
 </style>
 
+[Notebooks](http://nbviewer.ipython.org/github/smoh/ETGOutskirts/tree/master/)
 
 ## New subsample
- Bigger random selection from NSA
+
+Make a Bigger random selection from NSA
+
 - [TOPCAT session](../sample.session.fits) from SampleZMprobaEll in NSA+MORPH catalog, assign a random number (0-1) and select random 10% with random number > 0.9 & VDISP>70 --> dubbed SampleZMprobaEll_sub N=359
-- [testsample_ra_dec.txt](testsample_ra_dec.txt): visual classification using SDSS images
+- [`testsample_ra_dec.txt`](testsample_ra_dec.txt): visual classification using SDSS images
     * VELL column 1 if elliptical 0 if not
     * 136 excluded by visual (38%)
-    * ra, dec files for SDSS ImgList: [testsample_ra_dec_v1.txt](testsample_ra_dec_v1.txt), [testsample_ra_dec_v0.txt](testsample_ra_dec_v0.txt)
+    * ra, dec files for SDSS ImgList: [`testsample_ra_dec_v1.txt`](testsample_ra_dec_v1.txt), [`testsample_ra_dec_v0.txt`](testsample_ra_dec_v0.txt)
     * testsample_vis.fits: choose only VELL==1
-
-- `sample.fits`: These were combined with SampleZMprobaEll_visual. Excluding duplicates, total 269 galaxies
+- [sample.fits](sample.fits): These were combined with SampleZMprobaEll_visual. Excluding duplicates, total 269 galaxies
+- [visual flag for image quality](visualflag.dat)
+    * 0: OK (N=130)
+    * 1: image truncated nearby or within the galaxy
+    * 2: nearby bright source
+    * 3: bad deblending due to astrometry
+    * 4: bad deblending
 - download and prepare images for combined sample
 - remove sdss_ivar to save space
-* * *
 
+## Fitting
+For all models, the initial condition for PA, q, Re, x, y is taken from NSA single Sersic fitting.
+
+1. [single de Vaucouleurs](fit/dvc)
+    - initial conditions: fix Sersic index to 4
+2. [single Sersic](fit/ser)
+    - initial conditions: all parameters free,  start Sersic index at 4
+3. [dvc + exp](fit/dvcexp)
+    - initial conditions
+        + comp 1 : n=4(fixed), Re from NSA
+        + comp 2 : n=1(fixed), Re twice of comp 1, Ie 0.1 of comp 1
+
+
+* * *
 # Subsample test
 
 test sample of 49 galaxies
