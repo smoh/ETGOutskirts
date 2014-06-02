@@ -21,6 +21,11 @@
     }
 </style>
 
+2014-05-19
+
+* [Notebook:TestChiSquare](http://nbviewer.ipython.org/url/www.astro.princeton.edu/~semyeong/etg/TestChiSquare.ipynb): F-test and AIC criterion applied
+
+
 2014-05-08 Summary
 
 ## Sample
