@@ -21,7 +21,7 @@ class FundamentalPlane(object):
         """
         DA = cosmo.angular_diameter_distance(z).value * 1000. / 206265.
         R0_kpc = 10**( (self.a*log10(sigma) \
-                    - self.b/2.5*(flux_mag+2.5*log10(2*pi/DA**2)-10*log10(1+z)) \
+                    - self.b/2.5*(flux_mag+2.5*log10(2*pi/DA**2)) \
                     + self.c)/(1+2*self.b))      
         return R0_kpc
 

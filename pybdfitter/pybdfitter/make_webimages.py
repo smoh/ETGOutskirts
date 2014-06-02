@@ -5,74 +5,14 @@ import argparse
 import os
 from numpy import sign
 
-# open the template from file
-# templateLoader = jinja2.FileSystemLoader(searchpath='./')
-# templateEnv = jinja2.Environment(loader=templateLoader)
-# template = templateEnv.get_template('webimages.jinja')
-
-template = jinja2.Template(
-"""
-<!DOCTYPE html>
-<html>
-<head>
-</head>
-<body>
-<table border="1">
-    {% for row in table %}
-    <tr>
-        <td width="30%">
-            <table>
-                <tr>
-                    <td>INDEX:</td>
-                    <td>{{ loop.index0 }}</td>
-                </tr>
-                <tr>
-                    <td>NAME:</td>
-                    <td>{{ row['NAME'] }}</td>
-                </tr>
-                <tr>
-                    <td>{{'CHISQ_%s' % (profile)}}:</td>
-                    <td>{{ row['CHISQ_%s' % (profile)] }}</td>
-                </tr>
-                <tr>
-                    <td>{{'STAT_%s' % (profile)}}:</td>
-                    <td>{{ row['STAT_%s' % (profile)] }}</td>
-                </tr>
-                <tr>
-                    <td>REFF{{ '*' if row['%s_FIX' % (profile)][1] else '' }}:</td>
-                    <td>{{ row['FIT_%s' % (profile)][1] }}</td>
-                </tr>
-                <tr>
-                    <td>SERSIC_N{{ '*' if row['%s_FIX' % (profile)][2] else '' }}:</td>
-                    <td>{{ row['FIT_%s' % (profile)][2] }}</td>
-                </tr>
-                <tr>
-                    <td>Q_BA:</td>
-                    <td>{{ row['FIT_%s' % (profile)][3] }}</td>
-                </tr>
-                
-            </table>
-        </td>
-        <td>
-            <img width="80%" src="{{ '%s' % (plotdir) }}/{{ row['NAME'] }}.png">
-            {% if sdss %}
-            <a href="http://skyserver.sdss3.org/dr9/en/tools/chart/navi.asp?ra={{radec[loop.index0][0]}}&dec={{radec[loop.index0][1]}}&opt={{ opt }}" target="_blank">
-                <img src="http://skyservice.pha.jhu.edu/DR9/ImgCutout/getjpeg.aspx?ra={{radec[loop.index0][0]}}&dec={{radec[loop.index0][1]}}&opt=FG&scale=1.5&width=256&height=256">
-            {% endif %}
-        </td>
-    </tr>
-    {% endfor %}
-</table>
-</body>
-</html>
-""")
+template = jinja2.Template("images.html")
 
 parser = argparse.ArgumentParser(
             description="make html page of fitting result")
 parser.add_argument("result", type=str, help="fit result (RAWXXX.fits)")
 parser.add_argument("plotdir", type=str, help="directory of png images")
 parser.add_argument("outname", type=str, help="output html filename")
-parser.add_argument("--opt", type=str, help="SDSS navigate options", default='')
+parser.add_argument("--opt", type=str, help="SDSS navigate options", default='G')
 parser.add_argument("--sdss", action='store_true', help='get sdss cutout image?')
 args = parser.parse_args()
 

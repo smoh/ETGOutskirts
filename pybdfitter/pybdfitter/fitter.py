@@ -2,6 +2,8 @@ import subprocess
 import datetime
 import os
 
+__all__ = ['fit_sample', 'fit_sample_stream']
+
 def mkdir_p(path):
     import os, errno
     try:
@@ -12,8 +14,8 @@ def mkdir_p(path):
         else: raise
 
 
-def build_command_str(input, profile, start, end, outdir, datadir='data', imgdir=None,
-        filter='r', residual=True, debug=True, savepsf=False):
+def build_command_str(input, profile, start, end, outdir, datadir='data',
+        imgdir=None, filter='r', residual=True, debug=True, savepsf=False):
     """
     Build idl command string
     """
@@ -106,3 +108,21 @@ def fit_sample_stream(input, profile, start, end, outdir,
         os.rename(out_expected, output)
     outTable = outdir +'/'+ [out_expected if not output else output][0]
     return outTable
+
+def test_fit_sample_stream():
+    from pybdfitter.make_input import single_DVC
+    input = 'test/sample_test.fits'
+    profile = 'DVC:8'
+    start = 0
+    end = 1
+    outdir = 'test/out'
+    datadir = '../../subsampletest/data'
+    imgdir = '../../subsampletest/data/deblended'
+
+    single_DVC(input, 'test/sample_test_DVC.fits')
+    fit_sample_stream('test/sample_test_DVC.fits', profile, start, end, outdir,
+                      datadir=datadir, imgdir=imgdir)
+
+
+if __name__ == '__main__':
+    test_fit_sample_stream()
