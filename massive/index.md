@@ -12,3 +12,5 @@ $downloadNSA massive_SDSS.fits data/sdss_field r
 
 prepare SDSS images for bdfitter
 $python ../subsample_test/prepare_sdss.py massive_SDSS.fits data
+took about 2hrs
+
