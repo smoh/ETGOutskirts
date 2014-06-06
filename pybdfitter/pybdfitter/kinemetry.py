@@ -45,13 +45,3 @@ def kinemetry_phot(imagefile, x0, y0, initial_pa, initial_q,
     out = Table.read(outname, format='fits')
     os.remove(outname)
     return out
-
-
-def test_kinemetry_phot():
-    imagefile = '../../subsample_test/data/deblended/J093325.71+340253.1.fits'
-    x0 = 87.5
-    y0 = 87.4857
-    initial_pa = 45.
-    initial_q = 0.2
-    out = kinemetry_phot(imagefile, x0, y0, initial_pa, initial_q,
-                         verbose=True)
