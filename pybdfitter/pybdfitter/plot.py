@@ -17,7 +17,7 @@ pl.seterr(all='warn')
 pl.rc('lines', lw=2)
 
 
-def add_ellipse(ax, x, y, rx, ry, pa,**kwargs):
+def add_ellipse(ax, x, y, rx, ry, pa, **kwargs):
     """
     Add an ellipse to the axes
 
@@ -28,11 +28,11 @@ def add_ellipse(ax, x, y, rx, ry, pa,**kwargs):
     kwargs : passed on to matplotlib.patches.Ellipse
     """
     # default
-    if not kwargs.has_key('fc'):
+    if not 'fc' in kwargs:
         kwargs['fc'] = 'None'
-    if not kwargs.has_key('ec'):
+    if not 'ec' in kwargs:
         kwargs['ec'] = 'c'
-    if not kwargs.has_key('lw'):
+    if not 'lw' in kwargs:
         kwargs['lw'] = 1.
 
     from matplotlib.patches import Ellipse
@@ -65,17 +65,18 @@ class Ellipse:
         x-axis along the major axis
         """
         return ((x-self.x0)*np.cos(self.phi) + (y-self.y0)*np.sin(self.phi),
-            (y-self.y0)*np.cos(self.phi) - (x-self.x0)*np.sin(self.phi))
+                (y-self.y0)*np.cos(self.phi) - (x-self.x0)*np.sin(self.phi))
 
-    def is_inside( self, x, y ):
+    def is_inside(self, x, y):
         """
         Retrun true if x,y point is in ellipse
         """
-        (xt,yt)=self.recenter(x,y)
-        inside=(xt<self.r)&(yt<self.r)
-        small=np.where(inside)
+        (xt, yt) = self.recenter(x, y)
+        inside = (xt < self.r) & (yt < self.r)
+        small = np.where(inside)
 
-        rads=np.sqrt(xt[small]*xt[small] + yt[small]*yt[small]/(self.q*self.q))
+        rads = np.sqrt(xt[small] * xt[small] +
+                       yt[small] * yt[small] / (self.q * self.q))
         inside[small] = rads < self.r
         return inside
 
@@ -97,20 +98,21 @@ def calc_annulus(image, r_in, r_out, q, phi, x0, y0, mask=None):
     area is -1 if total = 0
     """
     Ny, Nx = pl.shape(image)
-    if mask == None:
+    if mask is None:
         mask = pl.array([[False]*Nx]*Ny)
     x, y = pl.meshgrid(pl.arange(Nx), pl.arange(Ny))
     ell1 = ~(Ellipse(r_in, q, x0, y0, phi).is_inside(x, y))
-    ell2 = Ellipse(r_out, q, x0, y0, phi).is_inside(x ,y)
+    ell2 = Ellipse(r_out, q, x0, y0, phi).is_inside(x, y)
     annulus = ell1 & ell2 & ~mask
     if not annulus.any():
-        return (0.0,0.0,0.0,-1.0)
+        return (0.0, 0.0, 0.0, -1.0)
     totalflux, meanflux, varflux, area = 0., 0., 0., 0.
     totalflux = sum(image[annulus])
     area = image[annulus].size
     meanflux = pl.mean(image[annulus])
     varflux = pl.var(image[annulus])
-    if totalflux == 0.0: area = -1.0
+    if totalflux == 0.0:
+        area = -1.0
     return (totalflux, meanflux, varflux, area)
 
 
@@ -122,15 +124,16 @@ def get_profile(image, q, phi, x0, y0, step=5, limit=100, mask=None):
     numstep = int(limit/step)
     mult_factor = 1.
     profile = np.recarray((numstep,),
-                dtype=[('radius',float),
-                        ('totalflux', float),
-                        ('mnflux',float),
-                        ('stdflux',float),
-                        ('sb', float),
-                        ('area', float)])
+                          dtype=[('radius', float),
+                                 ('totalflux', float),
+                                 ('mnflux', float),
+                                 ('stdflux', float),
+                                 ('sb', float),
+                                 ('area', float)])
     for i in range(numstep):
         profile[i].radius = r + 0.5*step
-        (tf, mf, vf, area) = calc_annulus(image, r, r+step, q, phi, x0, y0, mask=mask)
+        tf, mf, vf, area = calc_annulus(image, r, r+step, q, phi, x0, y0,
+                                        mask=mask)
         profile[i].mnflux = mf
         profile[i].stdflux = m.sqrt(vf)
         profile[i].sb = tf/area
@@ -168,17 +171,17 @@ def showim(ax, image, norm=None):
     if not isinstance(norm, pl.Normalize):
         if norm is 'asinh':
             norm = AsinhNorm(
-                    # vmin=image[~isnan(image)].min(),
-                    vmin=pl.percentile(image[~pl.isnan(image)].flatten(), 5),
-                    vmax=pl.percentile(image[~pl.isnan(image)].flatten(), 90)*20)
+                # vmin=image[~isnan(image)].min(),
+                vmin=pl.percentile(image[~pl.isnan(image)].flatten(), 5),
+                vmax=pl.percentile(image[~pl.isnan(image)].flatten(), 90)*20)
         if norm is 'log':
             norm = LogNorm()
         if norm is None:
             pass
-    im = ax.imshow(image, cmap=pl.cm.gray_r, 
-            norm=norm,
-            interpolation='nearest',
-            aspect='auto', origin='lower')
+    im = ax.imshow(image, cmap=pl.cm.gray_r,
+                   norm=norm,
+                   interpolation='nearest',
+                   aspect='auto', origin='lower')
     ax.xaxis.tick_top()
     try:
         cb = pl.colorbar(im, cax=ax_cb, orientation='horizontal')
@@ -200,7 +203,7 @@ class DataContainer(object):
         self.residual = self.img - self.model
         self.param = NSersic(p)
 
-        
+
 class Plotter(object):
     """plotting fitting result"""
     def __init__(self, output, datadir='data', modeldir='models'):
@@ -227,10 +230,10 @@ class Plotter(object):
 
     def __getitem__(self, index):
         return DataContainer(
-             self.datadir+'/deblended/%s.fits' % (self.result[index]['NAME']),
-             self.datadir+'/ivar/%s.fits' % (self.result[index]['NAME']),
-             self.modeldir+'/M%s.fits' % (self.result[index]['NAME']),
-             self.result[index]['FIT_'+self.profile_name])
+            self.datadir+'/deblended/%s.fits' % (self.result[index]['NAME']),
+            self.datadir+'/ivar/%s.fits' % (self.result[index]['NAME']),
+            self.modeldir+'/M%s.fits' % (self.result[index]['NAME']),
+            self.result[index]['FIT_'+self.profile_name])
 
     def show_images(self, index):
         """
@@ -241,25 +244,25 @@ class Plotter(object):
         residual = img - model
         sersic = NSersic(self.result[index]['FIT_'+self.profile_name])
 
-        fig = pl.figure(figsize=(12,4))
+        fig = pl.figure(figsize=(12, 4))
         gImages = pl.GridSpec(1, 3)
         gImages.update(
             left=0.05, right=0.97, top=0.9, bottom=0.1, wspace=0.02)
         # color normalization
         norm = AsinhNorm(
             vmin=pl.percentile(img.flatten(), 10),
-            vmax=pl.percentile(img.flatten(),90))
+            vmax=pl.percentile(img.flatten(), 90))
         # data image
-        ax1 = pl.subplot(gImages[0,0])
+        ax1 = pl.subplot(gImages[0, 0])
         ax1, ax1_cb = showim(ax1, img, norm=norm)
         # best-fit model
-        ax2 = pl.subplot(gImages[0,1], sharex=ax1, sharey=ax1)
+        ax2 = pl.subplot(gImages[0, 1], sharex=ax1, sharey=ax1)
         ax2, ax2_cb = showim(ax2, model, norm=norm)
         # residual image
-        ax3 = pl.subplot(gImages[0,2], sharex=ax1, sharey=ax1)
+        ax3 = pl.subplot(gImages[0, 2], sharex=ax1, sharey=ax1)
         ax3, ax3_cb = showim(ax3, residual, norm=norm)
         # highlight effective radius of each component
-        colors = cycle(['#3CF5C1','#F53C70'])
+        colors = cycle(['#3CF5C1', '#F53C70'])
         for i in range(sersic.nprofiles):
             add_ellipse(ax3, sersic[i].x, sersic[i].y, sersic[i].Re,
                         sersic[i].Re*sersic[i].q, sersic[i].pa,
@@ -277,8 +280,8 @@ class Plotter(object):
 
         fig = pl.figure()
         gProfile = pl.GridSpec(4, 1)
-        ax = pl.subplot(gProfile[:3,0])
-        ax_res = pl.subplot(gProfile[3,0], sharex=ax)
+        ax = pl.subplot(gProfile[:3, 0])
+        ax_res = pl.subplot(gProfile[3, 0], sharex=ax)
         fig.add_axes(ax_res)
 
         #TODO: manage compute time with step (divide limit by some nstep?)
@@ -292,7 +295,7 @@ class Plotter(object):
         v = 1./ivar
 
         azimuth = lambda x: get_profile(x, 1., 0., sersic[0].x, sersic[0].y,
-                                    step=step, limit=limit, mask=mask)
+                                        step=step, limit=limit, mask=mask)
 
         pVar = azimuth(v)
         # sigma = pl.sqrt(pVar.totalflux)/pVar.area  #pl.sqrt(pVar.area)
@@ -318,19 +321,18 @@ class Plotter(object):
             sbSigma = 2.5*sigma/pl.log(10.)/pImg.mnflux[good]
             ax.plot(pImg.radius, sbImg, c='k')
             ax.fill_between(radius,
-                             sbImg-sbSigma,
-                             sbImg+sbSigma,
-                             edgecolor='None', facecolor='0.5')
+                            sbImg-sbSigma,
+                            sbImg+sbSigma,
+                            edgecolor='None', facecolor='0.5')
             ax.plot(pModel.radius, sbModel, 'r-')
             ax.set_ylim(max(sbImg), min(sbImg))
             ax.set_ylabel('mag/arcsec$^2$')
-    
         # for multi component fit
         # these subcomponents are NOT psf-convolved!
         if 1:
             if sersic.nprofiles > 1:
                 x, y = pl.meshgrid(pl.arange(self[index].img.shape[1]),
-                             pl.arange(self[index].img.shape[0]))
+                                   pl.arange(self[index].img.shape[0]))
                 complist = []
                 for i in range(sersic.nprofiles):
                     complist.append(sersic2d(x, y, sersic[i].p))
@@ -349,7 +351,7 @@ class Plotter(object):
         ax_res.plot(pImg.radius, (pImg.mnflux - pModel.mnflux)/sigma)
 
         return vars()
-        
+
 
 
 
