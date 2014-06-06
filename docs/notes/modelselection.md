@@ -32,6 +32,7 @@ maximizing likelihood is equivalent to minimizing chi^2 in the case of Gaussian 
 BIC = -2*lnL_max + k*lnN
 N: number of data points
 
+I am uncertain if all these criteria will prove to be useful in the end... except that it makes dealing with a large data easier.
 
 ## References
 Liddle 2007
