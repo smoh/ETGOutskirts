@@ -7,9 +7,11 @@ from scipy.special import gamma
 
 __all__ = ["nanomaggie2mag", "mag2nanomaggie", "ip", "Sersic", "NSersic"]
 
+
 def nanomaggie2mag(nnmg):
     """ nnmg : flux in nanomaggie """
     return 22.5 - 2.5*log10(nnmg)
+
 
 def mag2nanomaggie(mag):
     return 10**((22.5 - mag)/2.5)
@@ -25,6 +27,7 @@ ip = {
     'y': 6,
     'pa': 7,
 }
+
 
 class Sersic(object):
     """ 2D Sersic profile """
@@ -44,28 +47,28 @@ class Sersic(object):
     # def __repr__(self):
     #     return '\n'.join([ "%2s = %g" % (n, self.__getattribute__(n)) \
     #             for n in Sersic.param_names ])
-    
+
     @property
     def Ro(self):
         """ circularized radius """
         return self.Re*sqrt(self.q)
-    
+
     @property
     def mu_e(self):
         """ surface brightness at r=Re (mag/arcsec^2) """
         return nanomaggie2mag(self.Ie/0.396**2)
-    
+
     @property
     def bn(self):
         """ from Lima-Neto et al. 1999 """
         return self.n*exp(0.6950 - 0.1789/self.n)
-    
+
     @property
     def mu_e_avg(self):
         """ mean surface brightness within Re mag/arcsec^2 """
         fn = self.n * exp(self.bn) * gamma(2.*self.n) / self.bn**(2.*self.n)
         return self.mu_e - 2.5*log10(fn)
-    
+
     @property
     def total_flux_mag(self):
         """total flux in magnitude """
@@ -94,14 +97,15 @@ def radius(param, x, y):
     c, x0, y0, phi = param[1:5]
 
     axtrans = np.abs((x-x0)*np.cos(phi) + (y-y0)*np.sin(phi))
-    aytransq = np.abs(( (y-y0)*np.cos(phi) - (x-x0)*np.sin(phi) )*iq)
+    aytransq = np.abs(((y-y0) * np.cos(phi) - (x-x0) * np.sin(phi))*iq)
     if c > 1e-12:
         expo = c+2.0
         expo_inv = 1./expo
-        r = ( axtrans**expo + aytransq**expo )**expo_inv
+        r = (axtrans**expo + aytransq**expo)**expo_inv
     else:
         r = np.sqrt(axtrans**2 + aytransq**2)
     return r
+
 
 def radius_fast(param, x, y):
     """ c = 0 """
@@ -115,6 +119,7 @@ def radius_fast(param, x, y):
     aytransq = (yy0*cp - xx0*sp)*iq
     r = np.sqrt(axtrans**2 + aytransq**2)
     return r
+
 
 def sersic2d(x, y, p, cutoff=False):
     """
@@ -162,8 +167,8 @@ def sersic2d(x, y, p, cutoff=False):
         denom = 1./(cut - fade)**2
 
         if len(x.shape) >= 1:
-            truncate = np.where( (r > fade) & (r < cut) )
-            cutoff = np.where( r > cut)
+            truncate = np.where((r > fade) & (r < cut))
+            cutoff = np.where(r > cut)
             if truncate:
                 density[truncate] *= (1. - (r[truncate]-fade)**2*denom)**2
             if cutoff:
