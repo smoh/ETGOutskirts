@@ -1,26 +1,28 @@
 import subprocess
-import datetime
 import os
+import errno
 
 __all__ = ['fit_sample', 'fit_sample_stream']
 
+
 def mkdir_p(path):
-    import os, errno
     try:
         os.makedirs(path)
     except OSError as exc:
         if exc.errno == errno.EEXIST and os.path.isdir(path):
             pass
-        else: raise
+        else:
+            raise
 
 
 def build_command_str(input, profile, start, end, outdir, datadir='data',
-        imgdir=None, filter='r', residual=True, debug=True, savepsf=False):
+                      imgdir=None, filter='r', residual=True, debug=True,
+                      savepsf=False):
     """
-    Build idl command string
+    Build idl command string for FIT_SAMPLE
     """
     cmd = "fit_sample, '{:s}', {:d}, {:d}, '{:s}', '{:s}'".format(
-            input, start, end+1, outdir+'/', datadir+'/')
+        input, start, end + 1, outdir + '/', datadir + '/')
     cmd = cmd + ", profiles={" + profile + "}"
     if filter:
         cmd += ', filter=%s' % (filter)
@@ -34,6 +36,7 @@ def build_command_str(input, profile, start, end, outdir, datadir='data',
         cmd += ", imgdir='{:s}'".format(imgdir + '/')
     return cmd
 
+
 def check_IDL():
     """ return 1 if no IDL command found """
     proc = subprocess.Popen(
@@ -44,14 +47,13 @@ def check_IDL():
 
 
 def fit_sample(input, profile, start, end, outdir,
-        datadir='data', imgdir=None, output=None,
-        filter='r', residual=True, debug=True, savepsf=False,
-        stdout=None, stderr=None):
-    
+               datadir='data', imgdir=None, output=None,
+               filter='r', residual=True, debug=True, savepsf=False,
+               stdout=None, stderr=None):
     if check_IDL():
         print "NO IDL found. Nothing else done"
         return 0
-    
+
     # prepare directories
     mkdir_p(outdir)
     if residual:
@@ -59,9 +61,10 @@ def fit_sample(input, profile, start, end, outdir,
     if savepsf:
         mkdir_p(datadir + '/sdss_psf')
 
-    cmd = build_command_str(input, profile, start, end, outdir,
-            datadir=datadir, imgdir=imgdir, filter=filter, residual=residual,
-            debug=debug, savepsf=savepsf)
+    cmd = build_command_str(
+        input, profile, start, end, outdir,
+        datadir=datadir, imgdir=imgdir, filter=filter, residual=residual,
+        debug=debug, savepsf=savepsf)
     proc = subprocess.Popen(["idl", "-e", cmd],
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out = proc.communicate()
@@ -74,18 +77,26 @@ def fit_sample(input, profile, start, end, outdir,
     out_expected = 'RAWFIT%05i.%05i.fits' % (start, end)
     if output:
         os.rename(out_expected, output)
-    outTable = outdir +'/'+ [out_expected if not output else output][0]
+    outTable = outdir + '/' + [out_expected if not output else output][0]
     return outTable
 
+
 def fit_sample_stream(input, profile, start, end, outdir,
-        datadir='data', imgdir=None, output=None,
-        filter='r', residual=True, debug=True, savepsf=False,
-        stdout=None, stderr=None):
-    
+                      datadir='data', imgdir=None, output=None,
+                      filter='r', residual=True, debug=True, savepsf=False,
+                      stdout=None, stderr=None, quiet=False):
+    """
+    Run bdfitter
+
+    input : str, input file name
+    profile : str, 'profile_name:number_of_params' e.g., 'DVC:8'
+    start : int, start row
+    end : int, end row (inclusive)
+    outdir : str, output directory
+    """
     if check_IDL():
         print "NO IDL found. Nothing else done"
         return 0
-    
     # prepare directories
     mkdir_p(outdir)
     if residual:
@@ -93,21 +104,29 @@ def fit_sample_stream(input, profile, start, end, outdir,
     if savepsf:
         mkdir_p(datadir + '/sdss_psf')
 
-    cmd = build_command_str(input, profile, start, end, outdir,
-            datadir=datadir, imgdir=imgdir, filter=filter, residual=residual,
-            debug=debug, savepsf=savepsf)
-    proc = subprocess.Popen(["idl", "-e", cmd],
-                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    for line in iter(proc.stdout.readline, b''):
-        print line,
-    out = proc.communicate() # close p.stdout, wait for the subprocess to exit
-    print out[1]
+    cmd = build_command_str(
+        input, profile, start, end, outdir,
+        datadir=datadir, imgdir=imgdir, filter=filter, residual=residual,
+        debug=debug, savepsf=savepsf)
+    if quiet:
+        proc = subprocess.Popen(["idl", "-e", cmd, "-quiet"],
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    else:
+        proc = subprocess.Popen(["idl", "-e", cmd],
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        for line in iter(proc.stdout.readline, b''):
+            print ' STDOUT '.center(80, '=')
+            print line,
+    out = proc.communicate()  # close p.stdout, wait for the subprocess to exit
+    if proc.returncode:  # if fails
+        print proc.stderr
 
     out_expected = 'RAWFIT%05i.%05i.fits' % (start, end)
     if output:
         os.rename(out_expected, output)
-    outTable = outdir +'/'+ [out_expected if not output else output][0]
+    outTable = outdir + '/' + [out_expected if not output else output][0]
     return outTable
+
 
 def test_fit_sample_stream():
     from pybdfitter.make_input import single_DVC
