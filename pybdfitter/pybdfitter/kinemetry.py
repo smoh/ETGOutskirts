@@ -4,8 +4,8 @@ import os
 from astropy.table import Table
 
 
-def kinemetry_phot(imagefile, x0, y0, initial_pa, initial_q,
-                   verbose=False, ntrm=10):
+def kinemetry_phot(imagefile, x0, y0, initial_pa, initial_q, radius=None,
+                   verbose=False, ntrm=6):
     """
     Do ellipse fitting to an image using IDL KINEMETRY_PHOP
 
@@ -14,7 +14,7 @@ def kinemetry_phot(imagefile, x0, y0, initial_pa, initial_q,
     initial_pa : initial value of PA (-90 to 90 degrees, 0 along the x-axis)
     initial_q ; initial value of flattening
 
-    Returns Table instance containing these columns
+    Returns astropy.table.Table instance containing these columns
         RAD : 1-d array of radius
         PA : 1-d array of PA at each radius
         Q : 1-d array of Q at each radius
@@ -30,6 +30,9 @@ def kinemetry_phot(imagefile, x0, y0, initial_pa, initial_q,
 
     cmd = "KINEMETRY_PHOT, '{:s}', {:f}, {:f}, {:f}, {:f}, '{:s}' ".format(
         imagefile, x0, y0, initial_pa, initial_q, outname)
+    if radius is not None:
+        radius_str = ','.join(['%f' % (x) for x in radius])
+        cmd += ", RADIUS='%s'" % (radius_str)
     cmd += ', NTRM=%i' % (ntrm)
     if verbose:
         cmd += ', /VERBOSE'

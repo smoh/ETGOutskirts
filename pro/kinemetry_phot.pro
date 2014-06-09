@@ -13,17 +13,23 @@
 ;	X0, Y0 : center position, fixed during ellipse fitting
 ;	ANGIN, QIN : initial values for ANGIN, QIN
 ;	OUTNAME : output FITS name
+;	RADIUS : string specifying radius e.g., '5,10,15.5'
 ;	NTRM : number of the Fourier terms
 ;	/VERBOSE : print verbose output
 ;	/PLOT : set plot keyword for kinemetry
 ;------------------------------------------------------------------------------
 
-PRO KINEMETRY_PHOT, IMAGE, X0, Y0, ANGIN, QIN, OUTNAME, $
+PRO KINEMETRY_PHOT, IMAGE, X0, Y0, ANGIN, QIN, OUTNAME, RADIUS=RADIUS, $
         VERBOSE=VERBOSE, NTRM=NTRM, PLOT=PLOT
 
 ext = 0
-img = mrdfits(image, ext, h)
+img = mrdfits(image, ext, h) * 1000
 s = size(img)
+
+; Make radius array if given
+if keyword_set(RADIUS) then begin
+	RADIUS = float(strsplit(RADIUS, ',', /extract))
+endif
 
 ; 
 ; determine size and make dummy 1-D arrays
@@ -41,7 +47,7 @@ flux=REFORM(img, n)
 KINEMETRY, x, y, flux, rad, pa, q, cf, NTRM=NTRM, /EVEN, verbose=VERBOSE, $
            X0=X0, Y0=Y0, XC=xc, YC=yc, IMG=img, $
            ER_CF=er_cf, ER_PA=er_pa, ER_q=er_q, ER_XC=er_xc, ER_YC=er_yc, $
-           XELLIP=xellip, YELLIP=yellip, $
+           XELLIP=xellip, YELLIP=yellip, RADIUS=RADIUS, $
            /nogrid, PAQ=[ANGIN, QIN], /fixcen, PLOT=PLOT
 
 ; Save output
