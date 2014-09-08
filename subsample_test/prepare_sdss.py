@@ -1,11 +1,10 @@
 """ script to prepare sdss field images for bdfitter
 
 assumes following directory structure
-[datadir]/
+data/
     nsa/
         pimages/ -- masking out stars
         images/ -- further deblending (child)
-        iavr/ -- paret images
     sdss_field/ -- SDSS field images (eventually to be read from Peyton disk)
     sdss_ivar/ -- ivar for the entire field
     sdss_psf_meta/ -- SDSS psField files
@@ -20,10 +19,10 @@ from astropy.table import Table
 from astropy.io import fits
 from astropy import wcs
 from pylab import *
-import uuid
 import logging, os
 
 from mpltools import mkdir_p
+
 
 formatter = logging.Formatter('%(asctime)s:%(levelname)s - %(message)s')
 handler = logging.StreamHandler()
@@ -34,6 +33,7 @@ log = logging.getLogger(__name__)
 log.addHandler(handler)
 log.setLevel(logging.INFO)
 
+
 def get_framename(run, camcol, field, filter):
     """
     Get sdss frame image name
@@ -41,6 +41,7 @@ def get_framename(run, camcol, field, filter):
     """
     name = 'frame-%s-%06i-%i-%04i.fits' % (filter, run, camcol, field)
     return name
+
 
 def get_childname(iauname, pid, aid):
     """
@@ -82,6 +83,7 @@ def sdss_gain(filter, camcol, run):
         return gainTable1[camcol-1][filter]
     else:
         return gainTable2[camcol-1][filter]
+
 
 def sdss_dark_variance(filter, camcol, run):
     """
@@ -133,10 +135,29 @@ def nearest_neighbor(x, y, z, xnew, ynew):
         return znew
 
 
+def nearest_neighbor_wcs(wcs, img, wcs_new):
+    """
+    Generate image according to new wcs
+    no interpolation is done.
+    """
+    img_new = zeros([wcs_new.naxis2, wcs_new.naxis1])
+    
+    for irow, row in enumerate(img_new):
+        for icol, pix in enumerate(row):
+            ra, dec = wcs_new.wcs_pix2world(icol, irow, 1)
+            iicol, iirow = wcs.wcs_world2pix(ra, dec, 1)
+            iicol, iirow = int(iicol), int(iirow)
+            try:
+                img_new[irow, icol] = img[iirow, iicol].copy()
+            except IndexError:
+                img_new[irow, icol] = -1
+    return img_new
+
+
 def save_ivar(filter, run, camcol, field, datadir):
     """ Build and save inverse variance image """
 
-    sdss_field_name = datadir+'/sdss_field/'+get_framename(run, camcol, field, filter)
+    sdss_field_name = datadir + 'sdss_field/'+get_framename(run, camcol, field, filter)
     hdulist = fits.open(sdss_field_name)
     hdr, img = hdulist[0].header, hdulist[0].data
     nrowc = img.shape[0]
@@ -162,119 +183,101 @@ def save_ivar(filter, run, camcol, field, datadir):
     ivar = 1./img_err**2
 
     ivar_out = sdss_field_name.replace('sdss_field', 'sdss_ivar')
-    print ivar_out, 'saved'
-    fits.PrimaryHDU(
-        data=ivar, header=hdr).writeto(ivar_out, clobber=True, output_verify='ignore')
+    log.info("Save inverse variance image: %s", ivar_out)
+    fits.PrimaryHDU(data=ivar, header=hdr).writeto(ivar_out, clobber=True)
 
 
 
-def reproject2child(filter, run, camcol, field, iauname, pid, aid, datadir):
-    """ reproject field image and ivar to match NSA child """
+master = Table.read('SampleZMprobaEllSub_visual.fits')
+
+filter = 'r'
+child_ext = 2
+datadir = 'data/'
+montage_silent = True
+tsize = len(master)
+
+# for igal, gal in enumerate(master):
+if 1:
+    gal = master[6]
+
+    size = gal['SIZE']  # in deg
+    ra, dec = gal['RA_1'], gal['DEC_1']
+    run, camcol, field = gal['RUN'], gal['CAMCOL'], gal['FIELD']
+    iauname, pid, aid = gal['IAUNAME'], gal['PID'], gal['AID']
+
+    if not datadir.endswith('/'): datadir + '/'
+    for subdir in ['sdss_ivar', 'images', 'ivar', 'hdr', 'diff', 'diffre', 'pimagere']:
+        mkdir_p(datadir + subdir) 
+    # input files
+    field_name = datadir + 'sdss_field/'+get_framename(run, camcol, field, filter)
+    ivar_name  = datadir + 'sdss_ivar/'+get_framename(run, camcol, field, filter)
+    nsa_image_name = datadir + 'nsa/images/' + get_childname(iauname, pid, aid)
+    nsa_parent_name = datadir + 'nsa/ivar/%s-parent-%s.fits.gz' % (iauname, pid)
+    nsa_pimage_name = datadir + 'nsa/pimages/%s-pimage.fits.gz' % (iauname)
+    # output files
+    out_image_name = datadir + 'images/%s_cutout.fits' % (iauname)
+    out_ivar_name = datadir + 'ivar/%s_ivar.fits' % (iauname)
+    # tempfiles
+    out_image_hdr =  datadir + 'hdr/%s_cutout.hdr' % (iauname)
+    out_nsa_diff_name = datadir + 'diff/%s.fits' % (iauname)
+    out_nsa_diff_re_name = datadir + 'diffre/%s.fits' % (iauname)
+    out_nsa_pimage_re_name = datadir + 'pimagere/%s_nsa_pimage_re.fits' % (iauname)
+
+    log.info("Process %s", iauname)
+    if not os.path.isfile(ivar_name): save_ivar(filter, run, camcol, field)
+
+    log.info("Cutout field image: %s", out_image_name)
+    montage.mSubimage(field_name, out_image_name, ra, dec, size)
+    log.info("Making header file: %s", out_image_hdr)
+    hdr = montage.mGetHdr(out_image_name, out_image_hdr)
+
+    # reproject everything to cutout field image
+    log.info("Cutout ivar image: %s", out_ivar_name)
+    montage.reproject(ivar_name, out_ivar_name, header=out_image_hdr, exact_size=True,
+                        silent_cleanup=montage_silent)
     
-    sdss_field_name = datadir+'/sdss_field/'+get_framename(run, camcol, field, filter)
-    sdss_ivar_name  = datadir+'/sdss_ivar/'+get_framename(run, camcol, field, filter)
-    child = get_childname(iauname, pid, aid)
-    child_ext = ['u','g','r','i','z'].index(filter)
-    hdrout = datadir+'/hdr/' + child.replace('fits.gz','.hdr')
-    montage.mGetHdr(datadir+'/nsa/images/'+child, hdrout, hdu=child_ext)  # extension important
-    imgname = datadir+'/raw/'+iauname+'.fits'
-    ivarname = datadir+'/ivar/'+iauname+'.fits'
-    montage.reproject(sdss_field_name, imgname, header=hdrout, exact_size=True,
-                        silent_cleanup=True)
-    montage.reproject(sdss_ivar_name, ivarname, header=hdrout, exact_size=True,
-                        silent_cleanup=True)
-    montage.mFixNan(ivarname, ivarname, nan_value=0.)
-    print imgname, 'saved'
-    print ivarname, 'saved'
-
-    # put column position angle in the psf header
-    # sdss_psf_name = datadir+'/sdss_psf/'+iauname + '-%s-psf.fits' % (filter)
-    # angle = fits.getval(sdss_field_name, 'SPA', ext=0)
-    # hdr = fits.getheader(sdss_psf_name)
-    # hdr['SPA'] = angle
+    log.info("Save parent - child: %s", out_nsa_diff_name)
+    hdu_child = fits.open(nsa_image_name)
+    hdu_parent = fits.open(nsa_parent_name)
+    fits.writeto(out_nsa_diff_name, data=hdu_parent[child_ext*2].data - hdu_child[child_ext].data,
+                    header=hdu_child[2].header, clobber=True)        
+    log.info("Reprojecting diff: %s", out_nsa_diff_re_name)
+    montage.reproject(out_nsa_diff_name, out_nsa_diff_re_name, header=out_image_hdr, exact_size=True,
+                        silent_cleanup=montage_silent)
 
 
+    log.info("WCS reproject pimage: %s", out_nsa_pimage_re_name)
+    img = fits.open(out_image_name, mode='update')
+    wimg = wcs.WCS(img[0].header)
+    imnaxis1, imnaxis2 = wimg.naxis1, wimg.naxis2
+    imworldx = wimg.wcs_pix2world(arange(imnaxis1), zeros(imnaxis1), 1)[0]
+    imworldy = wimg.wcs_pix2world(zeros(imnaxis2), arange(imnaxis2), 1)[1]
 
-if __name__ == '__main__':
+    pimg = fits.open(nsa_pimage_name)
+    wpimg = wcs.WCS(pimg[0].header)
+    pimnaxis1, pimnaxis2 = wpimg.naxis1, wpimg.naxis2
+    pimworldx = wpimg.wcs_pix2world(arange(pimnaxis1), zeros(pimnaxis1), 1)[0]
+    pimworldy = wpimg.wcs_pix2world(zeros(pimnaxis2), arange(pimnaxis2), 1)[1]
     
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument("catalog", type=str, help="NSA catalog FITS")
-    parser.add_argument("datadir", type=str, help="data directory")
-    parser.add_argument("-r", type=int, nargs=2,
-                        help="-r low high; set to -1 for end")
-    args = parser.parse_args()
+    pimg_new = nearest_neighbor_wcs(wpimg, pimg[0].data, wimg)
+    log.info("written to %s", out_nsa_pimage_re_name)
+    fits.writeto(out_nsa_pimage_re_name, pimg_new, img[0].header, clobber=True)
 
-    master = Table.read(args.catalog)    
-    filter = 'r'
-    child_ext = 2
-    datadir = args.datadir
+    # do pimage masking
+    # find out target galaxy id
+    pix_x, pix_y = wimg.wcs_world2pix(ra, dec, 1)  # pixel coord of target
+    pix_x, pix_y = int(pix_x), int(pix_y)
+    galid = pimg_new[pix_y, pix_x]
+    log.info("Target galaxy id = %3i", galid)
+    mask = ones([wimg.naxis2, wimg.naxis1])
+    mask[where((pimg_new > 0) & ( abs(pimg_new-galid) > 0.5 ))] = 0.
+    pmasked = img[0].data * mask
 
-    # prepare directories
-    for subdir in ['sdss_ivar', 'hdr', 'raw', 'masked', 'deblended', 'ivar']:
-        mkdir_p(datadir + '/' + subdir)
+    # do deblending
+    deblended = pmasked - fits.getdata(out_nsa_diff_re_name)
+    img[0].data = deblended
 
-    if args.r:
-        low, high = args.r
-        if high == -1:
-            high = len(master)
-    else:
-        low, high = 0, len(master)
-
-    for igal in range(low, high):
-        run, camcol, field = master['RUN', 'CAMCOL', 'FIELD'][igal].data
-        iauname, pid, aid = master['IAUNAME', 'PID', 'AID'][igal].data
-        ra, dec = master['RA_1', 'DEC_1'][igal].data  # galaxy ra, dec in degrees
-        print igal, iauname
-        # save inverse variance of the frame image
-        save_ivar(filter, run, camcol, field, datadir)
-        # reproject frame/ivar to NSA child
-        reproject2child(filter, run, camcol, field, iauname, pid, aid, datadir)
-
-        # do masking and deblending of cutout frame image
-        imgname = datadir + '/raw/' + iauname + '.fits'
-        img = fits.open(imgname)
-        wimg = wcs.WCS(img[0].header)
-        imnaxis1, imnaxis2 = wimg.naxis1, wimg.naxis2
-        imworldx = wimg.wcs_pix2world(arange(imnaxis1), zeros(imnaxis1), 1)[0]
-        imworldy = wimg.wcs_pix2world(zeros(imnaxis2), arange(imnaxis2), 1)[1]
-
-        # load mask image
-        pimage = datadir + '/nsa/pimages/'+'%s-pimage.fits.gz' % (iauname)
-        pimg = fits.open(pimage)
-        wpimg = wcs.WCS(pimg[0].header)
-        pimnaxis1, pimnaxis2 = pimg[0].header['NAXIS1'], pimg[0].header['NAXIS2']
-        pimworldx = wpimg.wcs_pix2world(arange(pimnaxis1), zeros(pimnaxis1), 1)[0]
-        pimworldy = wpimg.wcs_pix2world(zeros(pimnaxis2), arange(pimnaxis2), 1)[1]
-        pimg_new = nearest_neighbor(pimworldx, pimworldy, pimg[0].data, imworldx, imworldy)
-        pimg.close()
-        pix_x, pix_y = wimg.wcs_world2pix(ra, dec, 1)
-        pix_x = int(pix_x)
-        pix_y = int(pix_y)
-        galid = pimg_new[pix_y, pix_x]
-        mask = zeros_like(pimg_new)  # mask to be multiplied
-        mask[where(pimg_new == galid)] = 1.  # target
-        mask[where(pimg_new == -1)] = 1.  # unmasked region
-
-        # load extra sources to be deblended
-        child = fits.getdata(datadir+'/nsa/images/'+ \
-            get_childname(iauname, pid, aid), ext=child_ext)
-        parent = fits.getdata(datadir+'/nsa/ivar/%s-parent-%s.fits.gz' % (iauname, pid),
-                                ext=2*child_ext)
-        extra = parent - child  # to be subtracted from image
-
-        # save images
-        img_masked = img[0].data * mask
-        img[0].data = img_masked
-        img.writeto(datadir+'/masked/'+iauname+'.fits', clobber=True,
-                    output_verify='ignore') #, data=img_masked)
-        img_deblended = (img[0].data - extra) * mask
-        img_deblended[isnan(img_deblended)] = 0  # nan to zero
-        img[0].data = img_deblended
-        img.writeto(datadir+'/deblended/'+iauname+'.fits', clobber=True,
-                    output_verify='ignore')
-
-        img.close()
-        pimg.close()
-
+    print 'update', img.filename()
+    img.flush()
+    img.close()
 
