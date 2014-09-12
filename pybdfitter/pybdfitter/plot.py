@@ -201,7 +201,118 @@ class DataContainer(object):
         self.ivar = fits.getdata(ivar)
         self.model = fits.getdata(model)
         self.residual = self.img - self.model
-        self.param = NSersic(p)
+
+
+class lazy_property(object):
+    '''
+    meant to be used for lazy evaluation of an object attribute.
+    property should represent non-mutable data, as it replaces itself.
+    '''
+
+    def __init__(self, fget):
+        self.fget = fget
+        self.func_name = fget.__name__
+
+    def __get__(self, obj, cls):
+        if obj is None:
+            return None
+        value = self.fget(obj)
+        setattr(obj, self.func_name, value)
+        return value
+
+
+class GalaxyImage(object):
+    """ Galaxy Image """
+    def __init__(self, filename, center, mask=None, ivar=None):
+        """
+        GalaxyImage
+
+        filename : image filename or image
+        center : center of galaxy
+        ivar : ivar filename or ivar
+        """
+        # load data
+        if type(filename) is str:
+            self.filename = filename
+            self.data = fits.getdata(filename)
+        else:
+            self.data = filename
+        # image size
+        Ny, Nx = pl.shape(self.data)
+        if type(ivar) is str:
+            self.ivar = fits.getdata(ivar)
+        else:
+            self.ivar = ivar
+        if mask is None:
+            mask = pl.array([[False]*Nx]*Ny)
+        self.mask = mask
+        self.center = center
+
+        # default radius edges
+        r_start, r_step = 3, 2
+        # set radius limit to the nearest distance to edge
+        r_end = min([center[0], Nx-center[0], center[1], Ny-center[1]])
+        r_edges = pl.hstack(([0], pl.arange(r_start, r_end, r_step)))
+        self._r_edges = r_edges
+
+    @property
+    def r_edges(self):
+        return self._r_edges
+
+    @r_edges.setter
+    def r_edges(self, value):
+        self._r_edges = value
+
+    @lazy_property
+    def profile(self):
+        """
+        surface brightness profile (dictionary)
+
+        r : 1-d array of radius in arcsec
+        sb ; 1-d array of surface brightness (mag/arcsec^2)
+        """
+        # mask out zeros
+        xc, yc = self.center
+        r_edges = self.r_edges
+        radius = (r_edges[:-1] + r_edges[1:])*0.5
+        # prepare output
+        profile = np.recarray((len(radius),),
+                          dtype=[('radius', float),
+                                 ('totalflux', float),
+                                 ('mnflux', float),
+                                 ('stdflux', float),
+                                 ('sb', float),
+                                 ('area', float)])
+        profile.radius = radius  # copy radius
+        stop = 0
+        for i in range(len(r_edges)-1):
+            tf, mf, vf, area = calc_annulus(
+                self.data, r_edges[i], r_edges[i+1], 1., 0, xc, yc, mask=self.mask)
+            profile[i].mnflux = mf
+            profile[i].stdflux = m.sqrt(vf/area)
+            profile[i].sb = tf/area/.396**2
+            profile[i].area = area
+            profile[i].totalflux = tf
+            # stopping condition
+            # if profile[i].stdflux > profile[i].mnflux:
+            #     stop +=1
+            # if stop > 3:
+            #     break
+                             
+        # # convert units
+        # r_arcsec = p.radius * 0.396
+        # sb = nanomaggie2mag(p.mnflux/0.396**2)
+        # # error from variance image
+        # if self.ivar is not None:
+        #     pvar = azimuth(1./self.ivar)    
+        #     sberr = pl.sqrt(pvar['totalflux'])/pvar['area']/p.mnflux *2.5/pl.log(10.)
+        # else:
+        #     sberr = None
+        # return {'r': r_arcsec,
+        #         'sb': sb,
+        #         'sberr':sberr}
+        self._r_edges = r_edges[:i+2]
+        return profile[:i+1]
 
 
 class Plotter(object):
