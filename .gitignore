@@ -66,3 +66,5 @@ readAtlasImages-v5_4_11/
 
 data
 .*.swo
+uparm
+.nfs*
