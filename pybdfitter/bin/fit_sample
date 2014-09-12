@@ -25,8 +25,6 @@ parser.add_argument('-r', '--res', action='store_true',
                         help='store model images')
 parser.add_argument('-d', '--debug', action='store_true',
                         help='run in debug mode')
-parser.add_argument('--savepsf', action='store_true',
-                        help="save sdss psf; requires [data]/sdss_psf directory")
 parser.add_argument('-i', '--imgdir', type=str,
                         help='image directory')
 args = parser.parse_args()
@@ -37,4 +35,4 @@ print datetime.datetime.now()
 out = fit_sample(
     args.input, args.profile, args.start, args.end, args.outdir,
     datadir=args.datadir, imgdir=args.imgdir, filter=args.filter,
-    residual=args.res, debug=args.debug, savepsf=args.savepsf)
+    residual=args.res, debug=args.debug)
