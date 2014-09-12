@@ -116,31 +116,30 @@ def calc_annulus(image, r_in, r_out, q, phi, x0, y0, mask=None):
     return (totalflux, meanflux, varflux, area)
 
 
-def get_profile(image, q, phi, x0, y0, step=5, limit=100, mask=None):
+def get_profile(image, q, phi, x0, y0, r_bins=None, mask=None):
     """
     Get elliptical annulus profile
+
+    radius : 1-d array of radius at which to get values
     """
-    r = 0.
-    numstep = int(limit/step)
-    mult_factor = 1.
-    profile = np.recarray((numstep,),
+    radius = (r_bins[:-1] + r_bins[1:])*0.5
+    radius_edges = r_bins
+    profile = np.recarray((len(radius),),
                           dtype=[('radius', float),
                                  ('totalflux', float),
                                  ('mnflux', float),
                                  ('stdflux', float),
                                  ('sb', float),
                                  ('area', float)])
-    for i in range(numstep):
-        profile[i].radius = r + 0.5*step
-        tf, mf, vf, area = calc_annulus(image, r, r+step, q, phi, x0, y0,
-                                        mask=mask)
+    profile.radius = radius  # copy radius
+    for i in range(len(radius)-1):
+        tf, mf, vf, area = calc_annulus(
+            image, radius_edges[i], radius_edges[i+1], q, phi, x0, y0, mask=mask)
         profile[i].mnflux = mf
         profile[i].stdflux = m.sqrt(vf)
         profile[i].sb = tf/area
         profile[i].area = area
         profile[i].totalflux = tf
-        r = r + step
-        step *= mult_factor
 
     return profile
 
