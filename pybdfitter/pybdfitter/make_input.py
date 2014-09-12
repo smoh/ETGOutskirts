@@ -24,7 +24,7 @@ the parameters (in order) are:
 3 -- axis ratio (minor/major)
 4 -- shape of isophote, default is zero and fixed, 
         but if you specify XXX_FIX you need to fix the 4th parameter
-5 -- x coordinate of center of profile, be default multiple profiles 
+5 -- x coordinate of center of profile, by default multiple profiles 
         share a center
 6 -- y coordinate of center
 7 -- position angle (radians counterclockwise from x-axis)
