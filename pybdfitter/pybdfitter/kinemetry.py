@@ -5,7 +5,7 @@ from astropy.table import Table
 
 
 def kinemetry_phot(imagefile, x0, y0, initial_pa, initial_q, radius=None,
-                   verbose=False, ntrm=6):
+                   verbose=False, ntrm=6, stream=False):
     """
     Do ellipse fitting to an image using IDL KINEMETRY_PHOP
 
@@ -37,14 +37,19 @@ def kinemetry_phot(imagefile, x0, y0, initial_pa, initial_q, radius=None,
     if verbose:
         cmd += ', /VERBOSE'
 
-    proc = subprocess.Popen(["idl", "-e", cmd],
+    proc = subprocess.Popen(["idl", "-e", cmd, "-quiet"],
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    for line in iter(proc.stdout.readline, b''):
-        print line
+    if stream:
+        for line in iter(proc.stdout.readline, b''):
+            print line
     out = proc.communicate()
     if proc.returncode:
         print proc.stderr
 
-    out = Table.read(outname, format='fits')
+    try:
+        out = Table.read(outname, format='fits')
+    except IOError:
+        print 'could not read', outname
+        out = 0
     os.remove(outname)
     return out
