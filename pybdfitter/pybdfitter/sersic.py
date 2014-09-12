@@ -5,7 +5,7 @@ from pylab import *
 import numpy as np
 from scipy.special import gamma
 
-__all__ = ["nanomaggie2mag", "mag2nanomaggie", "ip", "Sersic", "NSersic"]
+__all__ = ["nanomaggie2mag", "mag2nanomaggie", "ip", "Sersic", "NSersic", "bn", "fn"]
 
 
 def nanomaggie2mag(nnmg):
@@ -27,6 +27,13 @@ ip = {
     'y': 6,
     'pa': 7,
 }
+
+def bn(n):
+    return n*exp(0.6950 - 0.1789/n)
+
+def fn(n):
+    return n * exp(bn(n)) * gamma(2.*n) / bn(n)**(2.*n)
+
 
 
 class Sersic(object):
