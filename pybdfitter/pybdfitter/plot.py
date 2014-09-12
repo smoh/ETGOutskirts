@@ -145,7 +145,7 @@ def get_profile(image, q, phi, x0, y0, step=5, limit=100, mask=None):
     return profile
 
 
-def showim(ax, image, norm=None):
+def showim(ax, image, norm=None, **kwargs):
     """
     Show single image with colorbar on the bottom
 
@@ -164,7 +164,7 @@ def showim(ax, image, norm=None):
     """
 
     divider = make_axes_locatable(ax)
-    ax_cb = divider.append_axes("bottom", size="5%", pad=0.05)
+    ax_cb = divider.append_axes("top", size="5%", pad=0.05)
     cf = ax.get_figure()
     cf.add_axes(ax_cb)
 
@@ -178,14 +178,14 @@ def showim(ax, image, norm=None):
             norm = LogNorm()
         if norm is None:
             pass
-    im = ax.imshow(image, cmap=pl.cm.gray_r,
+    im = ax.imshow(image, cmap=pl.cm.jet,
                    norm=norm,
                    interpolation='nearest',
-                   aspect='auto', origin='lower')
-    ax.xaxis.tick_top()
+                   aspect='auto', origin='lower', **kwargs)
+    # ax.xaxis.tick_top()
     try:
         cb = pl.colorbar(im, cax=ax_cb, orientation='horizontal')
-        ax_cb.xaxis.tick_bottom()
+        ax_cb.xaxis.tick_top()
         return ax, cb
     except:
         pass
