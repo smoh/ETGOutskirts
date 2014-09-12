@@ -191,7 +191,16 @@ def showim(ax, image, norm=None, **kwargs):
 
 
 class DataContainer(object):
-    """ DataContainer class """
+    """
+    DataContainer class used to access images as attributes
+
+    Attributes:
+    img : 2-d image array
+    ivar : 2-d ivar array
+    model : 2-d model array
+    residual : 2-d residual array
+    param : `NSersic` instance of the model
+    """
     def __init__(self, img, ivar, model, p):
         """
         Load data, model and residual images
@@ -315,7 +324,7 @@ class GalaxyImage(object):
 
 
 class Plotter(object):
-    """plotting fitting result"""
+    """ class for plotting fitting result painlessly """
     def __init__(self, output, datadir='data', modeldir='models'):
         """
         Initialize Plotter class
@@ -333,14 +342,14 @@ class Plotter(object):
         self._get_profile_name()
 
     def _get_profile_name(self):
-        # find out profile name
+        """ Get profile name from table column name """
         fitcol = [k for i, k in enumerate(self.result.colnames) if 'FIT_' in k]
         assert len(fitcol) == 1, "More than one profile found!"
         self.profile_name = fitcol[0].split('FIT_')[1]
 
     def __getitem__(self, index):
         return DataContainer(
-            self.datadir+'/deblended/%s.fits' % (self.result[index]['NAME']),
+            self.datadir+'/deblend/%s.fits' % (self.result[index]['NAME']),
             self.datadir+'/ivar/%s.fits' % (self.result[index]['NAME']),
             self.modeldir+'/M%s.fits' % (self.result[index]['NAME']),
             self.result[index]['FIT_'+self.profile_name])
@@ -446,7 +455,7 @@ class Plotter(object):
                 complist = []
                 for i in range(sersic.nprofiles):
                     complist.append(sersic2d(x, y, sersic[i].p))
-                clist   = cycle(['g', 'm'])
+                clist = cycle(['g', 'm'])
                 for im in complist:
                     p = azimuth(im)
                     ax.plot(p.radius, p.mnflux,
