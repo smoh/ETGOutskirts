@@ -5,12 +5,14 @@
 \usepackage{amsmath}
 
 
-
 % new commands go here
 \newcommand{\HI}{\ion{H}{1}}
+\newcommand{\Sersic}{S\'ersic}
 
-\newcommand{\sersic}{S\'ersic}
-
+% my todo command
+\usepackage{xcolor}
+\newcommand\todo[1]{\textcolor{red}{#1}}
+% \renewcommand\todo[1]{}  % hide todos
 
 \begin{document}
 
@@ -24,8 +26,38 @@
 
 
 \section{Introduction}
-Introduction...
+The formation of elliptical galaxies is one of the important open questions on the path way to
+understanding galaxy formation and evolution in $\Lambda$CDM universe -- why?
 
+In the recent years, many studies have reported and confirmed the size growth of ETGs.
+
+\section{Data \& Sample}
+
+\subsection{Data}
+We use the SDSS ``corrected frame'' images. These images have been sky-subtracted using an improved
+method of estimating global sky by fitting a smooth spline to the previous PHOTO sky estimates
+\citep[see][for details]{blanton2011}.
+
+For the fitting, we use cutouts of the frame images. Although the global sky estimates have been subtracted,
+a systematic residual background of typically $26-28$ mag/arcsec$^2$ remains.
+To include enough background pixels for estimating this residual sky level, we make use of the single \Sersic{}
+parameters provided by the NSA catalog,
+and set the optimal cutout size to be twice the radius at which the surface
+brightness of the galaxy is 30~mag/arcsec$^2$.
+The typical optimal cutout sizes range from \todo{some} arcsec ($40-80$ petrosian radius).
+We require that more than 70\% of the square area set by the optimal cutout size be covered in a single frame image,
+and exclude galaxies that do not meet this criterion.
+About 20\% of the sample is excluded.
+
+We use NSA pimages to mask out neighbors in each cutout image. In many cases, these masks treat nearby bright
+stars as connected to the galaxy.
+In addition, we have no hopes of accurately fitting surface brightness for galaxies with overlapping neighbor
+near the very center.
+We first do a single \Sersic{} fitting on images with NSA mask applied, and use the residual images to create
+additional masking and reject those with close neighbors.
+To mask out the remaining neighbors, 
+
+We examine whether our selection for fittable images introduces biases in the final eample.
 
 \section{Fitting}
 \subsection{Size from the Fundamental Plane}
@@ -47,7 +79,7 @@ the angular diameter distance $D_A$ (kpc/arcsec):
 With $b \sim -0.75$, $\log R_0 \propto -0.6 m$
 
 
-The \sersic{} profile
+The \Sersic{} profile
 
 \begin{align}
     I(R) &= I_e \exp \left[ -b_n \left( \frac{R}{R_e} \right)^{1/n} - 1 \right]
