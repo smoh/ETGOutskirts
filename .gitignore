@@ -68,3 +68,11 @@ data
 .*.swo
 uparm
 .nfs*
+# Meert data
+Meert
+# idl config file
+idlenv
+# pyraf cache
+pyraf/
+# jug stuff
+*.jugdata
