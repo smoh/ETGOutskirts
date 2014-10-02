@@ -2,7 +2,7 @@ import subprocess
 import os, sys
 import errno
 
-__all__ = ['fit_sample']
+__all__ = ['fit_sample', 'get_parser']
 
 
 def mkdir_p(path):
@@ -101,6 +101,32 @@ def fit_sample(input, profile, start, end, outdir,
         os.rename(out_expected, output)
     outTable = outdir + '/' + [out_expected if not output else output][0]
     return outTable
+
+
+def get_parser():
+    import argparse
+    parser = argparse.ArgumentParser(description='run fit_sample on input file')
+    parser.add_argument('input',
+                            help='input fits table')
+    parser.add_argument('profile', type=str,
+                            help='[profile name]:[number of params] e.g., SER:8')
+    parser.add_argument('start', type=int,
+                            help='zero-based starting index')
+    parser.add_argument('end', type=int,
+                            help='zero-based end index (inclusive)')
+    parser.add_argument('outdir',
+                            help='output directory')
+    parser.add_argument('datadir',
+                            help='data directory')
+    parser.add_argument('-f', '--filter', type=str, default='r',
+                            help='filter to fit')
+    parser.add_argument('-r', '--res', action='store_true',
+                            help='store model images')
+    parser.add_argument('-d', '--debug', action='store_true',
+                            help='run in debug mode')
+    parser.add_argument('-i', '--imgdir', type=str,
+                            help='image directory')
+    return parser
 
 
 def test_fit_sample_stream():
