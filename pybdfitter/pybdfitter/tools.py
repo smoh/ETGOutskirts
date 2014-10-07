@@ -1,7 +1,19 @@
 import numpy as np
 from scipy.stats import binned_statistic
 
-__all__ = ["radialprofile"]
+__all__ = ["nanomaggie2mag",
+           "mag2nanomaggie",
+           "radialprofile"]
+
+
+def nanomaggie2mag(nnmg):
+    """ nnmg : flux in nanomaggie """
+    return 22.5 - 2.5*np.log10(nnmg)
+
+
+def mag2nanomaggie(mag):
+    return 10**((22.5 - mag)/2.5)
+
 
 def radialprofile(image, center=None, binsize=2):
     """Calculate radial profile from an image

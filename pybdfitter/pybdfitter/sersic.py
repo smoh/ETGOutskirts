@@ -4,17 +4,10 @@ Routines for dealing with Sersic profile
 from pylab import *
 import numpy as np
 from scipy.special import gamma
+from .tools import nanomaggie2mag
 
-__all__ = ["nanomaggie2mag", "mag2nanomaggie", "ip", "Sersic", "NSersic", "bn", "fn"]
+__all__ = ["ip", "Sersic", "NSersic", "bn", "fn"]
 
-
-def nanomaggie2mag(nnmg):
-    """ nnmg : flux in nanomaggie """
-    return 22.5 - 2.5*log10(nnmg)
-
-
-def mag2nanomaggie(mag):
-    return 10**((22.5 - mag)/2.5)
 
 # parameter index dictionary as used in bdfitter
 ip = {
