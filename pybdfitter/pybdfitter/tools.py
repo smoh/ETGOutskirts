@@ -15,7 +15,7 @@ def mag2nanomaggie(mag):
     return 10**((22.5 - mag)/2.5)
 
 
-def radialprofile(image, center=None, binsize=2, mask=None):
+def radialprofile(image, statistic='mean', center=None, binsize=2, mask=None):
     """Calculate radial profile from an image
 
     image : 2d array
@@ -45,7 +45,9 @@ def radialprofile(image, center=None, binsize=2, mask=None):
     bins = np.arange(0, r.max(), binsize)
     bin_centers = (bins[1:] + bins[:-1]) * 0.5
 
-    p = binned_statistic(r[mask==False].ravel(), image[mask==False].ravel(), bins=bins)[0]
+    p = binned_statistic(
+        r[mask==False].ravel(), image[mask==False].ravel(),
+        statistic=statistic, bins=bins)[0]
 
     return bin_centers, p
 
