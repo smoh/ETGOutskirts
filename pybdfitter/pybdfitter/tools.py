@@ -41,8 +41,9 @@ def radialprofile(image, statistic='mean', center=None, binsize=2, mask=None):
         mask = np.r_[[[False]*image.shape[1]]*image.shape[0]]
 
     r = np.hypot(x - center[0], y - center[1])
+    rmax = min([center[0], center[1], image.shape[0]-center[0], image.shape[1]-center[1]])
 
-    bins = np.arange(0, r.max(), binsize)
+    bins = np.arange(0, rmax, binsize)
     bin_centers = (bins[1:] + bins[:-1]) * 0.5
 
     p = binned_statistic(
