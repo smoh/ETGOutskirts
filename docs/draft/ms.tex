@@ -47,14 +47,14 @@ brightness of the galaxy is 30~mag/arcsec$^2$.
 The typical optimal cutout sizes range from \todo{some} arcsec ($40-80$ petrosian radius).
 We require that more than 70\% of the square area set by the optimal cutout size be covered in a single frame image,
 and exclude galaxies that do not meet this criterion.
-About 20\% of the sample is excluded.
+About \todo{20\%} of the sample is excluded.
 
 We use NSA pimages to mask out neighbors in each cutout image. In many cases, these masks treat nearby bright
 stars as connected to the galaxy.
-In addition, we have no hopes of accurately fitting surface brightness for galaxies with overlapping neighbor
+In addition, we have no hopes of accurately fitting the surface brightness for galaxies with overlapping neighbor
 near the very center.
-We first do a single \Sersic{} fitting on images with NSA mask applied, and use the residual images to create
-additional masking and reject those with close neighbors.
+We first do a single \Sersic{} fitting on images with the NSA masks applied, and use the residual images to create
+additional masking, and reject those with close neighbors.
 To mask out the remaining neighbors, 
 
 We examine whether our selection for fittable images introduces biases in the final eample.
