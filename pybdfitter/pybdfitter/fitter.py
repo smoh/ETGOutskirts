@@ -16,7 +16,7 @@ def mkdir_p(path):
 
 
 def build_command_str(input, profile, start, end, outdir, datadir='data',
-                      imgdir=None, filter='r', residual=True, debug=True):
+                      imgdir=None, filter='r', residual=True, debug=True, freesky=False):
     """
     Build idl command string for FIT_SAMPLE
     """
@@ -31,6 +31,8 @@ def build_command_str(input, profile, start, end, outdir, datadir='data',
         cmd += ', /debug'
     if imgdir:
         cmd += ", imgdir='{:s}'".format(imgdir + '/')
+    if freesky:
+        cmd += ", /freesky"
     return cmd
 
 
@@ -46,7 +48,7 @@ def check_IDL():
 def fit_sample(input, profile, start, end, outdir,
                       datadir='data', imgdir=None, output=None,
                       filter='r', residual=True, debug=True, 
-                      stdout=None, stderr=None, quiet=False):
+                      stdout=None, stderr=None, quiet=False, freesky=False):
     """
     Run bdfitter
 
@@ -68,6 +70,8 @@ def fit_sample(input, profile, start, end, outdir,
         output table name. If not given, it will be name RAWFITXXX..
     residual : bool, default=True
         save model images?
+    freesky: bool, default=False
+        sky as free parameter?
     """
     if check_IDL():
         print "NO IDL found. Nothing else done"
@@ -80,7 +84,7 @@ def fit_sample(input, profile, start, end, outdir,
     cmd = build_command_str(
         input, profile, start, end, outdir,
         datadir=datadir, imgdir=imgdir, filter=filter, residual=residual,
-        debug=debug)
+        debug=debug, freesky=freesky)
     if quiet:
         proc = subprocess.Popen(["idl", "-e", cmd, "-quiet"],
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -126,6 +130,7 @@ def get_parser():
                             help='run in debug mode')
     parser.add_argument('-i', '--imgdir', type=str,
                             help='image directory')
+    parser.add_argument('--freesky', action='store_true')
     return parser
 
 

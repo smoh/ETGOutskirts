@@ -13,4 +13,4 @@ print datetime.datetime.now()
 out = fit_sample(
     args.input, args.profile, args.start, args.end, args.outdir,
     datadir=args.datadir, imgdir=args.imgdir, filter=args.filter,
-    residual=args.res, debug=args.debug)
+    residual=args.res, debug=args.debug, freesky=args.freesky)
