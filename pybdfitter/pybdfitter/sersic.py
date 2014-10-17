@@ -1,7 +1,6 @@
 """
 Routines for dealing with Sersic profile
 """
-from pylab import *
 import numpy as np
 from scipy.special import gamma
 from .tools import nanomaggie2mag
@@ -22,10 +21,10 @@ ip = {
 }
 
 def bn(n):
-    return n*exp(0.6950 - 0.1789/n)
+    return n*np.exp(0.6950 - 0.1789/n)
 
 def fn(n):
-    return n * exp(bn(n)) * gamma(2.*n) / bn(n)**(2.*n)
+    return n * np.exp(bn(n)) * gamma(2.*n) / bn(n)**(2.*n)
 
 
 
@@ -51,7 +50,7 @@ class Sersic(object):
     @property
     def Ro(self):
         """ circularized radius """
-        return self.Re*sqrt(self.q)
+        return self.Re*np.sqrt(self.q)
 
     @property
     def mu_e(self):
@@ -61,18 +60,18 @@ class Sersic(object):
     @property
     def bn(self):
         """ from Lima-Neto et al. 1999 """
-        return self.n*exp(0.6950 - 0.1789/self.n)
+        return self.n*np.exp(0.6950 - 0.1789/self.n)
 
     @property
     def mu_e_avg(self):
         """ mean surface brightness within Re mag/arcsec^2 """
-        fn = self.n * exp(self.bn) * gamma(2.*self.n) / self.bn**(2.*self.n)
-        return self.mu_e - 2.5*log10(fn)
+        fn = self.n * np.exp(self.bn) * gamma(2.*self.n) / self.bn**(2.*self.n)
+        return self.mu_e - 2.5*np.log10(fn)
 
     @property
     def total_flux_mag(self):
         """total flux in magnitude """
-        return self.mu_e_avg - 2.5*log10(2*pi*(self.Re*0.396)**2*self.q)
+        return self.mu_e_avg - 2.5*np.log10(2*pi*(self.Re*0.396)**2*self.q)
 
 
 class NSersic(object):
