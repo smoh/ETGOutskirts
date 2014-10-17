@@ -37,7 +37,8 @@ def kinemetry_phot(imagefile, x0, y0, initial_pa, initial_q, radius=None,
     if verbose:
         cmd += ', /VERBOSE'
 
-    proc = subprocess.Popen(["idl", "-e", cmd, "-quiet"],
+    idl = '/usr/peyton/common/software/idl/idl/idl81/bin/idl'
+    proc = subprocess.Popen([idl, "-e", cmd, "-quiet"],
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if stream:
         for line in iter(proc.stdout.readline, b''):

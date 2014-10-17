@@ -73,9 +73,9 @@ def fit_sample(input, profile, start, end, outdir,
     freesky: bool, default=False
         sky as free parameter?
     """
-    if check_IDL():
-        print "NO IDL found. Nothing else done"
-        return 0
+    # if check_IDL():
+    #     print "NO IDL found. Nothing else done"
+    #     return 0
     # prepare directories
     mkdir_p(outdir)
     if residual:
@@ -85,11 +85,13 @@ def fit_sample(input, profile, start, end, outdir,
         input, profile, start, end, outdir,
         datadir=datadir, imgdir=imgdir, filter=filter, residual=residual,
         debug=debug, freesky=freesky)
+    idl = '/usr/peyton/common/software/idl/idl/idl81/bin/idl'
     if quiet:
         proc = subprocess.Popen(["idl", "-e", cmd, "-quiet"],
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     else:
-        proc = subprocess.Popen(["idl", "-e", cmd],
+        print cmd
+        proc = subprocess.Popen([idl, "-e", cmd],
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         for line in iter(proc.stdout.readline, b''):
             # print ' STDOUT '.center(80, '=')
