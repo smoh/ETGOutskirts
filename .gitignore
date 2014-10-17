@@ -76,3 +76,11 @@ idlenv
 pyraf/
 # jug stuff
 *.jugdata
+# condor output
+err.[0-9]*.[0-9]*
+out.[0-9]*.[0-9]*
+log.[0-9]*.[0-9]*
+# log
+*.log
+# backup files
+*.bak
