@@ -2,8 +2,9 @@
 collection of tools to interact with iraf ellipse
 """
 
-from pyraf import iraf
 import os, shutil, uuid, re
+from pyraf import iraf
+from astropy.table import Table
 
 __all__ = ['ellipse', 'read_ellipse_output']
 
@@ -31,8 +32,11 @@ def ellipse(image, outname, verbose=False, **kwargs):
     *controlpar*
         conver : 
     """
+    # verify input
+    if 'x0' not in kwargs.keys() or 'y0' not in kwargs.keys():
+        raise KeyError('x0 or y0 is not found')
     # load packages
-    iraf.stsdas(_doprint=0)
+    iraf.stsdas(_doprint=0, motd=False)
     iraf.analysis(_doprint=0)
     iraf.isophote(_doprint=0)
 
@@ -50,6 +54,7 @@ def ellipse(image, outname, verbose=False, **kwargs):
     iraf.ellipse.maxsma = kwargs.pop('maxsma', 'INDEF')
     iraf.ellipse.step = kwargs.pop('step', 0.1)
     iraf.ellipse.linear = kwargs.pop('linear', 0)
+    iraf.ellipse.verbose = verbose
 
     # controlpar
     iraf.ellipse.conver = kwargs.pop('conver', 0.05)
@@ -76,4 +81,5 @@ def ellipse(image, outname, verbose=False, **kwargs):
 
 def read_ellipse_output(filename):
     return Table.read(
-        filename, format='ascii.commented_header', header_start=1, fill_values=['INDEF', '-99'])
+        filename, format='ascii.commented_header', header_start=1, data_start=0,
+        fill_values=['INDEF', '-99'])
