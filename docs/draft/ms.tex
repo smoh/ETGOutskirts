@@ -39,10 +39,10 @@ of ETGs.
 \section{Data \& Sample}
 
 \subsection{Data}
-We use the SDSS corrected frame images. These images have been
+We use the SDSS ``corrected frame'' images. These images have been
 sky-subtracted using an improved method of estimating global sky by fitting
 a smooth spline to the previous PHOTO sky estimates
-\citep[see][for details]{Blanton:2011aa}.
+\citep[see][for details]{blanton2011}.
 
 For the fitting, we use cutouts of the frame images.
 Although the global sky estimates have been subtracted, a systematic residual
@@ -65,6 +65,7 @@ for galaxies with overlapping neighbor near the very center.
 We first do a single \Sersic{} fitting on images with the NSA masks applied,
 and use the residual images to create additional masking,
 and reject those with close neighbors.
+<<<<<<< HEAD
 To mask out the remaining neighbors, we use the residuals of single Sersic
 fitting.
 We apply PSF matched filter, threshold at $10-\sigma$ and mask appropriate
@@ -141,6 +142,11 @@ We tend to exclude nearby, bright galaxies preferentially.
     \caption{Effective radius of Exp component vs. its axis ratio}
     \label{fig:Req}
 \end{figure*}
+=======
+To mask out the remaining neighbors, 
+
+We examine whether our selection for images introduces biases
+in the final sample.
 
 \section{Fitting}
 
