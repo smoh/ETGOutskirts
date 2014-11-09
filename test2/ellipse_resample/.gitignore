@@ -1,5 +1,4 @@
-#output by ellipse and tprint
-*.out
-*.dat
+# resampled images / output by ellipse and tprint for each galaxy
+J[0-9]*/
 # cl scripts are gen'd by resample.py
-*.cl
+run*.cl
