@@ -1,0 +1,5 @@
+#output by ellipse and tprint
+*.out
+*.dat
+# cl scripts are gen'd by resample.py
+*.cl
