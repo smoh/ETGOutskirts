@@ -6,3 +6,6 @@ Note that this failed for J0854 because my masking routine masked out the center
 
 - resample.py : resample images and arange them in each subdirectory and write a cl script that will run ellipse task on all images
 - makeplots.py : make plots of the result
+
+20141119
+fits images and *.out binary table deleted to save space 
