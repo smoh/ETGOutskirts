@@ -1,12 +1,6 @@
 #!/usr/bin/env python
 """ script to prepare sdss field images for bdfitter
 
-- Determine the desired cutout size as 1/sqrt(2) of pimage size so that cutout is
-  covered regardless of relative rotation between cutout and pimage.
-- If the nearest edge of the field image is smaller than the desired size, use
-  this as cutout size.
-- If the nearest edge of the field image is less than a quarter of the desired
-  size, issue a flag.
 - Prints index, IAU name, desired size (arcsec), actual size (arcsec), edge flag.
 - Inverse variance images are first made from SDSS field images (with exactly same
   size), and chopped in the same dimension as cutouts.
@@ -27,6 +21,8 @@
         ivar/ -- cutout ivar images are stored here
 """
 
+import os
+
 import montage_wrapper as montage
 from scipy import interpolate
 from astropy.table import Table
@@ -34,7 +30,6 @@ from astropy.io import fits
 from astropy import stats
 from astropy import wcs
 from pylab import *
-import os
 
 from mpltools import mkdir_p
 from pybdfitter.sersic import bn, fn, nanomaggie2mag
@@ -126,7 +121,10 @@ def sdss_dark_variance(filter, camcol, run):
 
 
 def save_ivar(filter, run, camcol, field, datadir):
-    """ Build and save inverse variance image """
+    """ Build and save inverse variance image
+
+    Returns filename of ivar image
+    """
 
     sdss_field_name = datadir+'/sdss_field/'+get_framename(run, camcol, field, filter)
     ivar_out = sdss_field_name.replace('sdss_field', 'sdss_ivar')  # output name
@@ -160,7 +158,7 @@ def save_ivar(filter, run, camcol, field, datadir):
     ivar = 1./img_err**2
 
     fits.PrimaryHDU(
-        data=ivar, header=hdr).writeto(ivar_out, clobber=True, output_verify='ignore')
+        data=ivar, header=hdr).writeto(ivar_out, output_verify='ignore')
     return ivar_out
 
 
