@@ -1,0 +1,146 @@
+#!/usr/bin/env python
+"""
+script to do additional masking using residual images of single Sersic model
+"""
+import sys
+
+from pylab import *
+from astropy.io import fits
+from astropy.table import Table
+from scipy import ndimage
+from skimage import morphology
+from skimage.feature import match_template
+from skimage.measure import regionprops, label
+
+
+def make_mask(image, psf, sigthres=10, min_size=10, width=20):
+    """
+    make a mask of sources of an image
+    sequence:
+        1. psf-matched filter
+        2. thresholded -- set sigthres
+        3. fill holes, and discard small regions -- set min_size 
+        4. dilate masked areas -- set width
+
+    image : 2d array
+        this would be residual of Sersic model
+    psf : 2d array
+        psf image
+    sigthres : float
+        after psf-matched filter, this sigma clipping will be performed
+    min_size : int
+        discard areas smaller than min_size
+    width : int
+        width of square used for dilation
+
+    Returns
+    mask : 2d boolean array. True for masked regions
+    """
+    # coordinates and radial distances
+    y, x = np.indices(image.shape)
+    center = np.array([(x.max()-x.min())/2.0, (y.max()-y.min())/2.0])
+    r = hypot(x - center[0], y - center[1])
+
+    # apply psf-matched filter
+    filtered = match_template(image, psf, pad_input=True)
+    # apply threshold
+    thres = filtered > sigthres*std(filtered.ravel())
+    # fill and clean small regions
+    filled = ndimage.binary_fill_holes(thres)
+    cleaned = morphology.remove_small_objects(filled, min_size=min_size)
+    # dilate
+    selem = morphology.square(width)
+    mask = morphology.dilation(cleaned, selem) > 0
+
+    return mask
+
+
+def make_mask_gal(gal, datadir, modeldir, outdir, figdir, dryrun=False, verbose=False):
+    """
+    make and apply additional masking using residuals of single Sersic best-fit
+
+    gal : dict-like
+        must contain 'NAME', 'FIT_SER'
+    
+    """
+    # load data
+    hduim = fits.open('%s/images/%s.fits' % (datadir, gal['NAME']))
+    psf = fits.getdata('%s/psf/%s.fits' % (datadir, gal['NAME']))
+    m = fits.getdata('%s/M%s.fits' % (modeldir, gal['NAME']))
+    r = hduim[0].data - m - gal['SKY_SER']  # residual image
+
+    maskbool = make_mask(r, psf, min_size=20)
+    # boolean to 1(not masked) and 0 (masked)
+    mask = zeros(maskbool.shape)
+    mask[~maskbool] = 1.
+    # apply additional mask to image
+    im_new = hduim[0].data.copy()
+    im_new *= mask
+
+    if not dryrun:
+        if 0:
+            # add my addtional mask to mask image as extension
+            hdulist = fits.open('%s/mask/%s_mask.fits' % (datadir, gal['NAME']))
+            hdr1 = hdulist[0].header.copy()  # copy pimage header
+            hdr1['COMMENT'] = 'Additional masking on top of NSA pimage'
+            hdu1 = fits.ImageHDU(data=mask.astype('float32'), header=hdr1)
+            hdulist.append(hdu1)
+            hdulist.close()
+            if verbose:
+                print "Added extension to %s" % (hdulist.filename())
+
+        # save new image
+        hdr = hduim[0].header.copy()
+        hdr['COMMENT'] = 'Additional masking applied.'
+        hdu = fits.PrimaryHDU(data=im_new, header=hdr)
+        fits.HDUList([hdu]).writeto('%s/%s.fits' % (outdir, gal['NAME']))
+
+    # calculate how much of the galaxy center is masked out
+    Re, cx, cy = gal['FIT_SER'][[1,5,6]]
+    y, x = indices(mask.shape)
+    radial = hypot(x-cx, y-cy)
+    frac = []
+    for rlimit in [1, 2]:
+        frac.append(
+            count_nonzero((radial<rlimit*Re)&(mask==0))/(pi*(rlimit*Re)**2))
+    print "{0:s} {1[0]:15.8f} {1[1]:15.8f}".format(gal['NAME'], frac)
+
+    # Draw a figure summary
+    fig = figure(figsize=(12, 4))
+    suptitle("%5i %s" % (gal['IND'], gal['NAME']))
+    subplots_adjust(left=0.05, right=0.95, wspace=0.2, bottom=0.05)
+    defaults = dict(origin='lower', interpolation='nearest')
+    fig.add_subplot(131)
+    title('residual')
+    imshow(r, norm=mpl.colors.LogNorm(), **defaults)
+    fig.add_subplot(132)
+    title('mask')
+    imshow(mask, cmap='gray', **defaults)
+    fig.add_subplot(133)
+    title('final')
+    imshow(im_new, norm=mpl.colors.LogNorm(), **defaults)
+    for r in [Re, 2*Re]:
+        gca().add_patch(Circle((cx,cy), radius=r, fill=False, edgecolor='k'))
+    savefig('%s/%s.png' % (figdir, gal['NAME']), dpi=80)
+    close()
+
+
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('table', type=str, help='Sersic model output table')
+    parser.add_argument('datadir', type=str, help='data directory')
+    parser.add_argument('modeldir', type=str, help='directory containing Sersic model images')
+    parser.add_argument('outdir', type=str, help='output directory; existing images are overwritten')
+    parser.add_argument('figdir', type=str, help='summary figures are saved here')
+    parser.add_argument('--verbose', action='store_true')
+    parser.add_argument('--dryrun', action='store_true')
+    args = parser.parse_args()
+
+    t = Table.read(args.table)
+    t['IND'] = arange(len(t))
+    for ind, gal in enumerate(t):
+        make_mask_gal(
+            gal, args.datadir, args.modeldir, args.outdir, args.figdir, verbose=args.verbose, dryrun=args.dryrun)
+        sys.stdout.flush()
+
