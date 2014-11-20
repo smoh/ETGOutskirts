@@ -21,7 +21,7 @@
         ivar/ -- cutout ivar images are stored here
 """
 
-import os
+import os, warnings
 
 import montage_wrapper as montage
 from scipy import interpolate
@@ -187,7 +187,10 @@ def resample_nearest(image1, image2, outside=-1):
     wx, wy = wcs_img1.all_pix2world(x, y, 0)
     val = hdu_img1[0].data
 
-    wcs_img2 = wcs.WCS(fits.getheader(image2), fix=False)
+    # ignore warning about non-standard FITS keyword
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', category=wcs.FITSFixedWarning)
+        wcs_img2 = wcs.WCS(fits.getheader(image2), fix=False)
     x1, y1 = meshgrid(arange(wcs_img2._naxis1), arange(wcs_img2._naxis2))
     wx1, wy1 = wcs_img2.all_pix2world(x1, y1, 0)
     out = interpolate.griddata((wx.ravel(), wy.ravel()), val.ravel(), (wx1, wy1), method='nearest')
