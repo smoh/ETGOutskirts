@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-""" script to prepare sdss field images for bdfitter
+""" script to prepare stamp images for bdfitter from SDSS field images
 
 - Prints index, IAU name, desired size (arcsec), actual size (arcsec), edge flag.
 - Inverse variance images are first made from SDSS field images (with exactly same
@@ -297,14 +297,16 @@ def process_images(gal, filter, datadir='data', outdir='pipeline', dryrun=False)
 
 
 if __name__ == '__main__':
-    nsa = Table.read('sample.fits')  # NSA table of the sample
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('table', type=str, help='fits table')
+    parser.add_argument('filter', type=str, help='u, g, r, i, z')
+    parser.add_argument('--outdir', type=str, help='output directory', default='pipeline')
+    args = parser.parse_args()
 
+    nsa = Table.read(args.table)  # NSA table of the sample
     # make directory structure
     for subdir in ['psf', 'cutout', 'mask', 'fig', 'images', 'ivar']:
-        mkdir_p(outdir+'/'+subdir)
-    # set size of stamps
-    nsa['SIZEDEG'] = [x if x<0.07 else 0.07 for x in nsa['PETROTH50']/3600.*40]
-    outdir = 'pipeline'
-    filter = 'r'
-    for gal in nsa[[0]]:
-        process_images(gal, filter=filter, outdir=outdir)
+        mkdir_p(args.outdir+'/'+subdir)
+    for gal in nsa:
+        process_images(gal, filter=args.filter, outdir=args.outdir)
