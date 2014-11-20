@@ -22,7 +22,7 @@
         ivar/ -- cutout ivar images are stored here
 """
 
-import os, warnings
+import os, warnings, sys
 
 import montage_wrapper as montage
 from scipy import interpolate
@@ -304,3 +304,4 @@ if __name__ == '__main__':
         mkdir_p(args.outdir+'/'+subdir)
     for gal in nsa:
         process_images(gal, filter=args.filter, outdir=args.outdir)
+        sys.stdout.flush()
