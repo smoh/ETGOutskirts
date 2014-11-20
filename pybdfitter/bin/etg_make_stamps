@@ -148,7 +148,7 @@ def save_ivar(filter, run, camcol, field, datadir):
     #    a calibration image the same size as the frame image, in units of
     #    nanomaggies per count
     calib = hdulist[1].data
-    cimg = calib * ones([nrowc, 1])
+    cimg = calib * ones([nrowc, 1], dtype='float32')
 
     gain = sdss_gain(filter, camcol, run)
     darkVariance = sdss_dark_variance(filter, camcol, run)
@@ -158,7 +158,7 @@ def save_ivar(filter, run, camcol, field, datadir):
     ivar = 1./img_err**2
 
     fits.PrimaryHDU(
-        data=ivar, header=hdr).writeto(ivar_out, output_verify='ignore')
+        data=ivar.astype('float32'), header=hdr).writeto(ivar_out, output_verify='ignore')
     return ivar_out
 
 
