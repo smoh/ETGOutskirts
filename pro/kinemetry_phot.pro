@@ -19,11 +19,12 @@
 ;	/PLOT : set plot keyword for kinemetry
 ;------------------------------------------------------------------------------
 
-PRO KINEMETRY_PHOT, IMAGE, X0, Y0, ANGIN, QIN, OUTNAME, RADIUS=RADIUS, $
+PRO KINEMETRY_PHOT, IMAGE, IVAR_IMAGE, X0, Y0, ANGIN, QIN, OUTNAME, RADIUS=RADIUS, $
         VERBOSE=VERBOSE, NTRM=NTRM, PLOT=PLOT
-
+!quiet=1
+COMPILE_OPT idl2, HIDDEN
 ext = 0
-img = mrdfits(image, ext, h) * 1000
+img = mrdfits(image, ext, h)
 s = size(img)
 
 ; Make radius array if given
@@ -41,13 +42,19 @@ x=REFORM(xx, n)
 y=REFORM(yy, n)
 flux=REFORM(img, n)
 
+sigma = 1./sqrt(mrdfits(IVAR_IMAGE, 0))
+; flux_err = REFORM(sigma, n)
+flux_err = sigma
+
 ;
 ; running kinemetry
 ;
 KINEMETRY, x, y, flux, rad, pa, q, cf, NTRM=NTRM, /EVEN, verbose=VERBOSE, $
+           ERROR=flux_err, $
            X0=X0, Y0=Y0, XC=xc, YC=yc, IMG=img, $
            ER_CF=er_cf, ER_PA=er_pa, ER_q=er_q, ER_XC=er_xc, ER_YC=er_yc, $
            XELLIP=xellip, YELLIP=yellip, RADIUS=RADIUS, $
+           ;/fixcen, PLOT=PLOT
            /nogrid, PAQ=[ANGIN, QIN], /fixcen, PLOT=PLOT
 
 ; Save output
