@@ -259,7 +259,7 @@ def process_images(gal, filter, datadir='data', outdir='pipeline', dryrun=False)
     # to be multiplied to cutout image
     mask = where((pim != gal_id) & (pim != -1), 0., 1.)
     # write mask image
-    hdu_mask = fits.HDUList([fits.PrimaryHDU(data=mask)])
+    hdu_mask = fits.HDUList([fits.PrimaryHDU(data=mask.astype('float32'))])
     hdu_mask[0].header.update(hdu_cutout[0].header)  # put WCS header keywords
     hdu_mask.writeto(outdir+'/mask/%s_mask.fits' % (gal['IAUNAME']))
     
