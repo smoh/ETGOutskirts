@@ -1,0 +1,13 @@
+
+universe     = vanilla
+getenv       = True
+requirements = (Arch =="X86_64" && OpSys == "LINUX")
+executable   = my.exec
+arguments    = $(Process)
+notification = Error
+
+error   = err.$(Cluster).$(Process)                                               
+output  = out.$(Cluster).$(Process)                                                
+log     = log.$(Cluster).$(Process)
+
+queue 27
