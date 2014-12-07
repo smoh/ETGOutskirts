@@ -1,18 +1,23 @@
-\documentclass{aastex}
+\documentclass[iop]{emulateapj}
 
 % packages
 \usepackage{natbib}
 \usepackage{amsmath}
-
+\usepackage{graphicx}
+% \usepackage{subcaption}
 
 % new commands go here
 \newcommand{\HI}{\ion{H}{1}}
 \newcommand{\Sersic}{S\'ersic}
+\newcommand{\chisq}{\ensuremath{\chi^2}}
+
 
 % my todo command
 \usepackage{xcolor}
 \newcommand\todo[1]{\textcolor{red}{#1}}
 % \renewcommand\todo[1]{}  % hide todos
+
+\graphicspath{{figures/}}
 
 \begin{document}
 
@@ -26,56 +31,130 @@
 
 
 \section{Introduction}
-The formation of elliptical galaxies is one of the important open questions on the path way to
-understanding galaxy formation and evolution in $\Lambda$CDM universe -- why?
 
-In the recent years, many studies have reported and confirmed the size growth of ETGs.
+In the recent years, many studies have reported and confirmed the size growth
+of ETGs.
 
 \section{Data \& Sample}
 
 \subsection{Data}
-We use the SDSS ``corrected frame'' images. These images have been sky-subtracted using an improved
-method of estimating global sky by fitting a smooth spline to the previous PHOTO sky estimates
+We use the SDSS corrected frame images. These images have been
+sky-subtracted using an improved method of estimating global sky by fitting
+a smooth spline to the previous PHOTO sky estimates
 \citep[see][for details]{blanton2011}.
 
-For the fitting, we use cutouts of the frame images. Although the global sky estimates have been subtracted,
-a systematic residual background of typically $26-28$ mag/arcsec$^2$ remains.
-To include enough background pixels for estimating this residual sky level, we make use of the single \Sersic{}
-parameters provided by the NSA catalog,
+For the fitting, we use cutouts of the frame images.
+Although the global sky estimates have been subtracted, a systematic residual
+background of typically $26-28$ mag/arcsec$^2$ remains.
+To include enough background pixels for estimating this residual sky level,
+we make use of the single \Sersic{} parameters provided by the NSA catalog,
 and set the optimal cutout size to be twice the radius at which the surface
 brightness of the galaxy is 30~mag/arcsec$^2$.
-The typical optimal cutout sizes range from \todo{some} arcsec ($40-80$ petrosian radius).
-We require that more than 70\% of the square area set by the optimal cutout size be covered in a single frame image,
+The typical optimal cutout sizes range from
+\todo{some} arcsec ($40-80$ petrosian radius).
+We require that more than 70\% of the square area set by the optimal cutout
+size be covered in a single frame image,
 and exclude galaxies that do not meet this criterion.
 About \todo{20\%} of the sample is excluded.
 
-We use NSA pimages to mask out neighbors in each cutout image. In many cases, these masks treat nearby bright
-stars as connected to the galaxy.
-In addition, we have no hopes of accurately fitting the surface brightness for galaxies with overlapping neighbor
-near the very center.
-We first do a single \Sersic{} fitting on images with the NSA masks applied, and use the residual images to create
-additional masking, and reject those with close neighbors.
+We use NSA pimages to mask out neighbors in each cutout image.
+In many cases, these masks treat nearby bright stars as connected to the galaxy.
+In addition, we have no hopes of accurately fitting the surface brightness
+for galaxies with overlapping neighbor near the very center.
+We first do a single \Sersic{} fitting on images with the NSA masks applied,
+and use the residual images to create additional masking,
+and reject those with close neighbors.
 To mask out the remaining neighbors, 
 
-We examine whether our selection for fittable images introduces biases in the final eample.
+We examine whether our selection for images introduces biases
+in the final sample.
+
+\begin{figure*}[]
+    \begin{center}
+        \includegraphics[width=.32\textwidth]{distZ_sample}
+        \includegraphics[width=.32\textwidth]{distPetrorMag_sample}
+        \includegraphics[width=.32\textwidth]{distSigma_sample}
+    \end{center}
+    \caption{Distribution of redshift, Petrosian r magnitude, and velocity
+        dispersion before and after excluding bad images.
+        Bottom panels show the fraction of excluded galaxies in each bin.}
+    \label{fig:SampleImageBias}
+\end{figure*}
+
+\begin{figure*}[]
+    \begin{center}
+        \includegraphics[width=0.95\textwidth]{gridParams}
+    \end{center}
+    \caption{Correlation between key parameters of deVExp model. Red points
+        highlight double component galaxies.}
+    \label{fig:CornerPlot}
+\end{figure*}
+
+\begin{figure*}[]
+    \begin{tabular}{cc}
+        \includegraphics[width=.45\textwidth]{distBT} &
+        \includegraphics[width=.45\textwidth]{distSersicN}\\
+        \includegraphics[width=.45\textwidth]{distSigma} &
+        \includegraphics[width=.45\textwidth]{distReRatio}
+    \end{tabular}
+    \caption{Distribution of $B/T$, \Sersic index, $\sigma$ and
+        $R_{e,1}/R_{e,4}$ for single and double component galaxies.}
+    \label{fig:DoubleCompParams}
+\end{figure*}
+
+\begin{figure*}[]
+    \begin{center}
+        \includegraphics[width=0.9\textwidth]{componentFP}
+    \end{center}
+    \caption{The Fundamental Plane relation for deV (red) and Exp (blue)
+        component of deVExp model. The two figures are identical except
+        highlighted component. Larger symbols are for double component
+        galaxies.}
+    \label{fig:ComponentFP}
+\end{figure*}
+
+\begin{figure}[]
+    \begin{center}
+        \includegraphics[width=.45\textwidth]{diff_chi2}
+    \end{center}
+    \caption{$\triangle\chisq$ for single and double (red) component galaxies.}
+    \label{fig:DiffChisq}
+\end{figure}
+
+\begin{figure*}[]
+    \begin{center}
+        \includegraphics[width=0.45\textwidth]{Re_q_exp}
+        \includegraphics[width=0.45\textwidth]{Re_qratio}
+    \end{center}
+    \caption{Effective radius of Exp component vs. its axis ratio}
+    \label{fig:Req}
+\end{figure*}
 
 \section{Fitting}
 \subsection{Size from the Fundamental Plane}
 
+
+
 \begin{eqnarray}
        \mu_0 &= 2.5 + \log(2 \pi r^2) - 10 \log(1+z)
-   \end{eqnarray}   
+\end{eqnarray}
 
 The effective circular size $R_0$ in kpc is related to $r$ by
 the angular diameter distance $D_A$ (kpc/arcsec):
 
-\begin{align}
-    r &= R_0 / D_A \\
-    \log R_0 &= a \log \sigma - \frac{b}{2.5} \mu_0 + c \\
-    \log R_0 &= \frac{1}{1 + 2 b} \left[ a\log \sigma
+\begin{equation}
+    r = R_0 / D_A \\
+\end{equation}
+
+\begin{equation}
+    \log R_0 = a \log \sigma - \frac{b}{2.5} \mu_0 + c
+\end{equation}
+
+\begin{equation}
+    \log R_0 = \frac{1}{1 + 2 b} \left[ a\log \sigma
         - \frac{b}{2.5} \left(m + 2.5\log \frac{2\pi}{D_A^2} - 10 \log (1+z)\right)
-        + c \right]\\
-\end{align}
+        + c \right]
+\end{equation}
 With $b \sim -0.75$, $\log R_0 \propto -0.6 m$
 
 
