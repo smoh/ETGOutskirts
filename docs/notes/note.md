@@ -1,3 +1,9 @@
+2014-09-18 Thu
+
+check bias before/after cut
+given luminosity , n bias? Re?
+
+
 2014-09-05 Fri meeting with Jenny
 
 1. Check FP, color of two component galaxies

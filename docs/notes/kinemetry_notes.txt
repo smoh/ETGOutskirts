@@ -1,0 +1,13 @@
+errata
+
+NRAD : ...is encountered and NRAD is not necessary *achived*. To force kinemetry to 
+RADIUS : ... for the kinemetric *analisys*. The values should be in pixel space 
+
+
+## test on data/deblended/J100630.69+010828.1.fits
+compare pa and q for grid with /nogrid fitting
+- both pa and q are different
+- errors in both case are not sensible
+* need to see the model images to see which one actually does better
+
+is /nogrid sensitive to initial conditions?
