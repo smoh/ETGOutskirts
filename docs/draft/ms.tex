@@ -10,6 +10,7 @@
 \newcommand{\HI}{\ion{H}{1}}
 \newcommand{\Sersic}{S\'ersic}
 \newcommand{\chisq}{\ensuremath{\chi^2}}
+\renewcommand{\Re}{\ensuremath{R_e}}
 
 
 % my todo command
@@ -64,10 +65,12 @@ for galaxies with overlapping neighbor near the very center.
 We first do a single \Sersic{} fitting on images with the NSA masks applied,
 and use the residual images to create additional masking,
 and reject those with close neighbors.
-To mask out the remaining neighbors, 
-
-We examine whether our selection for images introduces biases
-in the final sample.
+To mask out the remaining neighbors, we use the residuals of single Sersic
+fitting.
+We apply PSF matched filter, threshold at $10-\sigma$ and mask appropriate
+regions where extra sources are detected.
+If more than half of the center ($< \Re - 2\Re$) is masked, we exclude
+the galaxy from fitting.
 
 \begin{figure*}[]
     \begin{center}
@@ -80,6 +83,15 @@ in the final sample.
         Bottom panels show the fraction of excluded galaxies in each bin.}
     \label{fig:SampleImageBias}
 \end{figure*}
+
+We examine whether our selection for images introduces biases
+in the final sample.
+Figure~\ref{fig:SampleImageBias} shows the distribution of redshift, Petrosian
+r magnitude, and velocity dispersion before and after the cut is made.
+We tend to exclude nearby, bright galaxies preferentially.
+\todo{update figure}
+
+
 
 \begin{figure*}[]
     \begin{center}
@@ -131,9 +143,19 @@ in the final sample.
 \end{figure*}
 
 \section{Fitting}
+
+Our goal is to select ETGs that may be decomposed into a core and an outer
+component.
+We use a two component model which is a sum of de Vaucouleur (core)
+and an exponential component(deVExp).
+The model image is convolved with the PSF.
+We estimate the parameters by minimizing the \chisq.
+
+To select two component ETGs, we look for galaxies where the exponential
+outer component dominates the surface brightness. 
+
 \subsection{Size from the Fundamental Plane}
-
-
+\todo{}
 
 \begin{eqnarray}
        \mu_0 &= 2.5 + \log(2 \pi r^2) - 10 \log(1+z)
@@ -151,22 +173,23 @@ the angular diameter distance $D_A$ (kpc/arcsec):
 \end{equation}
 
 \begin{equation}
-    \log R_0 = \frac{1}{1 + 2 b} \left[ a\log \sigma
-        - \frac{b}{2.5} \left(m + 2.5\log \frac{2\pi}{D_A^2} - 10 \log (1+z)\right)
-        + c \right]
+\begin{split}
+    \log R_0 &= \frac{1}{1 + 2 b} \Bigl[ a\log \sigma\\
+        &- \frac{b}{2.5} \Bigl(m + 2.5\log \frac{2\pi}{D_A^2} - 10
+        \log (1+z)\Bigr) + c \Bigr]
+\end{split}
 \end{equation}
 With $b \sim -0.75$, $\log R_0 \propto -0.6 m$
 
 
-The \Sersic{} profile
-
-\begin{align}
-    I(R) &= I_e \exp \left[ -b_n \left( \frac{R}{R_e} \right)^{1/n} - 1 \right]
-\end{align}
-We take analytic form of $b_n$ from Lima-Neto et al. 1999
-\begin{align}
-    b_n &= n \exp\left(0.6950 - \frac{0.1789}{n}\right)
-\end{align}
+% The \Sersic{} profile
+% \begin{align}
+%     I(R) &= I_e \exp \left[ -b_n \left( \frac{R}{R_e} \right)^{1/n} - 1 \right]
+% \end{align}
+% We take analytic form of $b_n$ from Lima-Neto et al. 1999
+% \begin{align}
+%     b_n &= n \exp\left(0.6950 - \frac{0.1789}{n}\right)
+% \end{align}
 
 
 

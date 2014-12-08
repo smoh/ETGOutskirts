@@ -2,3 +2,6 @@
 *.log
 *.fdb_latexmk
 figures
+*.bbl
+*.blg
+*.bib
