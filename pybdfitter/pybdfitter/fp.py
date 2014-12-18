@@ -32,6 +32,10 @@ class FundamentalPlane(object):
         """
         DA = cosmo.angular_diameter_distance(z).value * 1000. / 206265.
         return self.R0(sigma, flux_mag, z) / DA
+
+    def __str__(self):
+        return "logR0 = %+5.2flog(sigma) %+5.2flogI0 %+5.2f" % (
+            self.a, self.b, self.c)
     
 
 Bernardi03_r = FundamentalPlane(a=1.17, b=-0.75, c=-8.022)
