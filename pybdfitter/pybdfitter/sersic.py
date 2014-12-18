@@ -3,9 +3,10 @@ Routines for dealing with Sersic profile
 """
 import numpy as np
 from scipy.special import gamma
-from .tools import nanomaggie2mag
+from .tools import nanomaggie2mag, mag2nanomaggie
+from astropy.table import Table
 
-__all__ = ["ip", "Sersic", "NSersic", "bn", "fn"]
+__all__ = ["ip", "Sersic", "NSersic", "bn", "fn", "flux_in_mag"]
 
 
 # parameter index dictionary as used in bdfitter
@@ -26,6 +27,8 @@ def bn(n):
 def fn(n):
     return n * np.exp(bn(n)) * gamma(2.*n) / bn(n)**(2.*n)
 
+def flux_in_mag(params):
+    return Sersic(params).flux_mag
 
 
 class Sersic(object):
@@ -60,7 +63,7 @@ class Sersic(object):
     @property
     def bn(self):
         """ from Lima-Neto et al. 1999 """
-        return self.n*np.exp(0.6950 - 0.1789/self.n)
+        return bn(self.n)
 
     @property
     def mu_e_avg(self):
@@ -69,9 +72,14 @@ class Sersic(object):
         return self.mu_e - 2.5*np.log10(fn)
 
     @property
-    def total_flux_mag(self):
+    def flux_mag(self):
         """total flux in magnitude """
-        return self.mu_e_avg - 2.5*np.log10(2*pi*(self.Re*0.396)**2*self.q)
+        return self.mu_e_avg - 2.5*np.log10(2*np.pi*(self.Re*0.396)**2*self.q)
+
+    @property
+    def flux_nnmg(self):
+        """total flux in nanomaggie"""
+        return mag2nanomaggie(self.flux_mag)
 
 
 class NSersic(object):
@@ -89,6 +97,36 @@ class NSersic(object):
     def info(self):
         s = "NComponents = %4i" % (self.nprofiles)
         print s
+
+    @property
+    def total_flux_nnmg(self):
+        """total flux of all components"""
+        total_flux = 0.
+        for p in self.profiles:
+            total_flux += p.flux_nnmg
+        return total_flux
+
+    @property
+    def total_flux_mag(self):
+        """total flux of all components in mag"""
+        return nanomaggie2mag(self.total_flux_nnmg)
+
+    @property
+    def flux_ratios(self):
+        """list of comp/total flux ratios"""
+        flux_ratios = []
+        for p in self.profiles:
+            flux_ratios.append(p.flux_nnmg/self.total_flux_nnmg)
+        return flux_ratios
+
+    def __str__(self):
+        t = Table()
+        t['Name'] = ['SersicN', 'RePix', 'AxisRatio', 'FluxRatio']
+        for i, p in enumerate(self.profiles):
+            t['Comp%i' % (i)] = [p.n, p.Re, p.q, self.flux_ratios[i]]
+        return t.__str__()
+
+
 
 
 def radius(param, x, y):
