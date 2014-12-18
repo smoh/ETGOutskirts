@@ -1,7 +1,12 @@
+*.pyc
+
 *.fits
+
+#condor outputs
 err.*
 out.*
 log.*
+
 .*un~
 .*swp
 .ipynb_checkpoints
@@ -9,3 +14,6 @@ log.*
 data
 *.png
 *.pdf
+
+test
+subsample_test
