@@ -4,7 +4,7 @@ import os
 from astropy.table import Table
 
 
-def kinemetry_phot(imagefile, x0, y0, initial_pa, initial_q, radius=None,
+def kinemetry_phot(imagefile, ivarfile, x0, y0, initial_pa, initial_q, radius=None,
                    verbose=False, ntrm=6, stream=False):
     """
     Do ellipse fitting to an image using IDL KINEMETRY_PHOP
@@ -28,8 +28,8 @@ def kinemetry_phot(imagefile, x0, y0, initial_pa, initial_q, radius=None,
     dum, tempname = tempfile.mkstemp(suffix='.fits')
     outname = tempname
 
-    cmd = "KINEMETRY_PHOT, '{:s}', {:f}, {:f}, {:f}, {:f}, '{:s}' ".format(
-        imagefile, x0, y0, initial_pa, initial_q, outname)
+    cmd = "KINEMETRY_PHOT, '{:s}', '{:s}', {:f}, {:f}, {:f}, {:f}, '{:s}' ".format(
+        imagefile, ivarfile, x0, y0, initial_pa, initial_q, outname)
     if radius is not None:
         radius_str = ','.join(['%f' % (x) for x in radius])
         cmd += ", RADIUS='%s'" % (radius_str)
