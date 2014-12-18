@@ -1,88 +1,11 @@
-*.py[cod]
-
-# C extensions
-*.so
-
-# Packages
-*.egg
-*.egg-info
-dist
-build
-eggs
-parts
-#bin
-var
-sdist
-develop-eggs
-.installed.cfg
-lib
-lib64
-__pycache__
-
-# Installer logs
-pip-log.txt
-
-# Unit test / coverage reports
-.coverage
-.tox
-nosetests.xml
-
-# Translations
-*.mo
-
-# Mr Developer
-.mr.developer.cfg
-.project
-.pydevproject
-.DS_Store
-*~
-.thumbs/
-.ipynb_checkpoints/
-*.swp
-*.sublime-project
-*.sublime-workspace
-
-
 *.fits
-*.pdf
-*.cat
-*.png
-*.gz
-*.html
-*.fit
-*.fits.bz2
-*.hdr
-*.zip
-
-# logfiles
-log*
-
-# symlinks to external libraries
-bdfitter
-mpltools
-
-data/rc3
-readAtlasImages-v5_4_11/
-
-data
-.*.swo
-uparm
-.nfs*
-# Meert data
-Meert
-# idl config file
-idlenv
-# pyraf cache
-pyraf/
-# jug stuff
+err.*
+out.*
+log.*
+.*un~
+.*swp
+.ipynb_checkpoints
 *.jugdata
-# condor output
-err.[0-9]*.[0-9]*
-out.[0-9]*.[0-9]*
-log.[0-9]*.[0-9]*
-# log
-*.log
-# backup files
-*.bak
-# idl libraries
-idllib
+data
+*.png
+*.pdf
