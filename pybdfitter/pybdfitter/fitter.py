@@ -94,7 +94,6 @@ def fit_sample(input, profile, start, end, outdir,
         proc = subprocess.Popen([idl, "-e", cmd],
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         for line in iter(proc.stdout.readline, b''):
-            # print ' STDOUT '.center(80, '=')
             print line,
             sys.stdout.flush()
             sys.stderr.flush()
