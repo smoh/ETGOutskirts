@@ -10,6 +10,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from sersic import Sersic, NSersic, sersic2d, nanomaggie2mag
 from .tools import radialprofile
+from .fp import cosmo
 import mpltools
 from itertools import cycle
 
@@ -75,7 +76,7 @@ def showim(ax, image, norm=None, **kwargs):
             norm = LogNorm()
         if norm is None:
             pass
-    im = ax.imshow(image, cmap=plt.cm.jet,
+    im = ax.imshow(image, 
                    norm=norm,
                    interpolation='nearest',
                    aspect='auto', origin='lower', **kwargs)
@@ -110,8 +111,11 @@ class Model(object):
         return fitcol[0].split('FIT_')[1]
 
     def get_image(self, ind):
-        return fits.getdata(self.modeldir+'/M%s.fits' % (self.output_table['NAME'][ind]))
-
+        if 'OUTNAME' in self.output_table.colnames:
+            imgname = self.modeldir+'/%s' % (self.output_table['OUTNAME'][ind])
+        else:
+            imgname = self.modeldir+'/M%s.fits' % (self.output_table['NAME'][ind])
+        return fits.getdata(imgname)
 
     # @property
     # def ncomps(self):
@@ -120,11 +124,12 @@ class Model(object):
 
 class Sample(object):
     """ sample class """
-    def __init__(self, table_name, datadir):
+    def __init__(self, table_name, datadir, imgdir='images'):
         self.table_name = table_name
         self.table = Table.read(table_name)
         self.datadir = datadir
         self.models = {}
+        self.imgdir = imgdir
 
     def add_model(self, name, table_name, modeldir):
         self.models[name] = Model(table_name, modeldir)
@@ -141,22 +146,37 @@ class Sample(object):
         return len(self.models.keys())
 
     def get_image(self, iden):
-        return np.ma.masked_equal(fits.getdata(self.datadir + '/images_admask/%s.fits' % (self.table['IAUNAME'][iden])), 0)
+        return np.ma.masked_equal(fits.getdata(self.datadir + '/%s/%s.fits' % (self.imgdir, self.table['IAUNAME'][iden])), 0)
 
     def get_ivar(self, iden):
         return fits.getdata(self.datadir + '/ivar/%s.fits' % (self.table['IAUNAME'][iden]))
 
-    def show_image(self, iden):
-        fig = plt.figure(figsize=(15, 3.5))
+    def show_image(self, iden, unit='raw'):
+        # calculate figure size
+        image_size = 3.5  # inch
+        margin = 0.2
+        n_images = len(self.models.keys()) + 1  # models + data
+        fig_x = n_images * (margin + image_size) + margin
+        fig_y = image_size + 2*margin
+        fig = plt.figure(figsize=(fig_x, fig_y))
+
         grid = plt.GridSpec(1, self.Nmodels+1)
         grid.update(left=0.05, right=0.97, top=0.9, bottom=0.1, wspace=0.02)
         # data image
         imgData = self.get_image(iden)
-        ax, cax = showim(plt.subplot(grid[0]), imgData, norm='log')
+        imgIvar = self.get_ivar(iden)
+        if unit is 'raw':
+            ax, cax = showim(plt.subplot(grid[0]), imgData, norm='log', cmap='cubehelix')
+        elif unit is 'mag':
+            ax, cax = showim(plt.subplot(grid[0]), nanomaggie2mag(imgData/.396**2), cmap='cubehelix')
         # residual images
         for i, key in enumerate(self.models.keys(), start=1):
             imgModel = self.models[key].get_image(iden) + self.models[key].sky[iden]
-            ax, cax = showim(plt.subplot(grid[i]), imgData - imgModel, norm='log')
+            if unit is 'raw':
+                ax, cax = showim(plt.subplot(grid[i]), (imgData - imgModel)*np.sqrt(imgIvar), cmap='RdBu', vmin=-5, vmax=5)
+            elif unit is 'mag':
+                resmag = nanomaggie2mag(imgData/.396**2) - nanomaggie2mag(imgModel/.396**2)
+                ax, cax = showim(plt.subplot(grid[i]), resmag, cmap='cubehelix')
             ax.set_title(key)
             # highlight effective radius of each component
             p = self.models[key].p
@@ -166,34 +186,83 @@ class Sample(object):
                             p[i].Re[iden]*p[i].q[iden], p[i].pa[iden],
                             ec=colors.next())
 
-    def show_profile(self, iden):
+    def get_profile_comps(self, iden, model):
+        model = self.models[model]
+        imgData = self.get_image(iden)
+        center = self.table['CENTER'][iden]  # fixed galaxy center
+        sersic = NSersic(model.output_table['FIT_%s'%(model.profile)][iden])
+        x, y = np.meshgrid(np.arange(imgData.shape[1]),
+                           np.arange(imgData.shape[0]))
+        profs = []
+        for i in range(sersic.nprofiles):
+            r, p = radialprofile(sersic2d(x, y, sersic[i].p), center=center)
+            profs.append((r, p))
+        return profs
+
+    def show_profile(self, iden, log=True, unit='raw', xunit='pixel', residual='sigma'):
+        """
+        show profile plot of a galaxy
+
+        log : bool
+            plot radius in log scale
+        unit : str
+            'raw' or 'mag'
+        residual : str
+            'sigma' or 'ratio'
+        """
+        assert residual in ['sigma', 'ratio'], "residual not recognized"
+        assert unit in ['raw', 'mag'], "unit not recognized"
+        assert xunit in ['pixel', 'kpc', 'arcsec'], "xunit not recognized"
         # setup figure and axes
-        fig = plt.figure(figsize=(6, 8))
+        fig = plt.figure(figsize=(6, 6))
         fig.suptitle('%i %s' % (iden, self.table['IAUNAME'][iden][:6]), x=0.55, fontsize=15)
         fig.subplots_adjust(left=0.15, bottom=0.1, right=0.95, top=0.94, hspace=0.08)
         grid = plt.GridSpec(nrows=2, ncols=1)
         ax1 = plt.subplot(grid[0])
         ax2 = plt.subplot(grid[1], sharex=ax1)
+        # color cycle
+        colors = cycle(['#348ABD', '#A60628', '#7A68A6', '#467821',
+                  '#D55E00', '#CC79A7', '#56B4E9', '#009E73', '#F0E442', '#0072B2'])
+
+        # get data
         center = self.table['CENTER'][iden]  # fixed galaxy center
         imgData = self.get_image(iden)
         rData, pData = radialprofile(imgData, center=center, binsize=2, mask=imgData.mask)
         rData, sigData = radialprofile(imgData, statistic=np.std, center=center, binsize=2, mask=imgData.mask)
         rData, countData = radialprofile(imgData, statistic='count', center=center, binsize=2, mask=imgData.mask)
-        ax1.plot(rData, pData, 'ko')
-        colors = cycle(['#348ABD', '#A60628', '#7A68A6', '#467821',
-                  '#D55E00', '#CC79A7', '#56B4E9', '#009E73', '#F0E442', '#0072B2'])
-        residual = 'sigma'  # which residual plot?
+        
+        # radius conversion factor
+        if xunit is 'pixel':
+            xconv = 1.
+            ax2.set_xlabel("radius (pixels)")
+        elif xunit is 'arcsec':
+            xconv = 0.396
+            ax2.set_xlabel("radius (arcsec)")
+        elif xunit is 'kpc':
+            xconv = 0.396 * cosmo.angular_diameter_distance(self.table['Z_1'][iden]).value * 1000./206265.
+            ax2.set_xlabel("radius (kpc)")
+        # start plotting
+        if unit is 'raw':
+            ax1.plot(rData*xconv, pData, 'k.', zorder=5)
+            ax1.set_ylabel("nanomaggies / pixel")
+        elif unit is 'mag':
+            ax1.plot(rData*xconv, nanomaggie2mag(pData/.396**2), 'k.', zorder=5)
+            ax1.set_ylabel("mag / arcsec$^2$")
         # plot each model
+        jmodel = 1
         for key, model in self.models.iteritems():
             c = colors.next()
             rModel, pModel = radialprofile(model.get_image(iden) + model.sky[iden], center=center, binsize=2)
-            ax1.plot(rModel, pModel, label=key, c=c)
-            # ax2.plot(rModel, pModel/pData)
+            if unit is 'raw':
+                ax1.plot(rModel*xconv, pModel, label=key, c=c)
+            elif unit is 'mag':
+                ax1.plot(rModel*xconv, nanomaggie2mag(pModel/.396**2), label=key, c=c)
             if residual is 'sigma':
-                ax2.plot(rModel, (pData-pModel)/(sigData/np.sqrt(countData)), c=c)
+                ax2.set_ylabel('residual / sigma')
+                ax2.plot(rModel*xconv, (pData-pModel)/(sigData/np.sqrt(countData)), c=c)
+                ax2.axhline(0, c='k', lw=1)
             elif residual is 'ratio':
-                ax2.plot(rModel, pData/pModel, c=c)
-
+                ax2.plot(rModel*xconv, pData/pModel, c=c)
             # indicate sub-components
             sersic = NSersic(model.output_table['FIT_%s'%(model.profile)][iden])
             if sersic.nprofiles > 1:
@@ -201,23 +270,28 @@ class Sample(object):
                                    np.arange(imgData.shape[0]))
                 for i in range(sersic.nprofiles):
                     r, p = radialprofile(sersic2d(x, y, sersic[i].p), center=center)
-                    ax1.plot(r, p, ls='--', c=c)
-                # clist = cycle(['g', 'm'])
+                    if unit is 'raw':
+                        ax1.plot(r*xconv, p, ls='--', lw=1, c=c)
+                    elif unit is 'mag':
+                        ax1.plot(r*xconv, nanomaggie2mag(p/.396**2), ls='--', lw=1, c=c)
+            # indicate effective radius
+            for i in range(sersic.nprofiles):
+                ax1.axvline(sersic[i].Re*xconv, color=c, lw=1, ymin=0.05, ymax=0.05+0.05*jmodel)
+            jmodel += 1
 
-        # ax1.set_xscale('log')
-        xlim = ax1.get_xlim()[1]
-        # ax1.set_xlim([0, xlim/2.])
+        ax1.set_xlim([.95*rData.min()*xconv, 1.05*rData.max()*xconv])
         plt.setp(ax1.get_xticklabels(), visible=False)
-        ax1.set_yscale('log')
-        ax1.set_ylim(pData[pData>0].min(), pData.max())
-        ax1.set_ylabel("nanomaggies / pixel")
+        if unit is 'raw':
+            ax1.set_yscale('log')
+            ax1.set_ylim(pData[pData>0].min(), pData.max())
+        elif unit is 'mag':
+            ax1.set_ylim(nanomaggie2mag(pData[pData>0].min()*0.9/.396**2), nanomaggie2mag(pData.max()*1.1/.396**2))
         ax1.legend(loc='upper right')
-
         # ax2.set_xlim([0, xlim/2.])
-        ax2.set_xlabel("radius (pixels)")
-        if residual is 'sigma':
-            ax2.set_ylabel('residual / sigma')
+
+        if log is True:
+            ax1.set_xscale('log')
+            ax2.set_xscale('log')
 
 
-        ax2.axhline(1, c='k')
 
