@@ -24,7 +24,24 @@ def save_image(ind):
     plt.savefig("figures/image/%03i_%s.png" % (ind, s.table['IAUNAME'][ind]), dpi=80)
     plt.close()
 
+@TaskGenerator
+def save_ellipse(ind):
+    cx, cy = s.table['CENTER'][ind]
+    outname = 'ellipse/%s.ell.dat' % (s.table['IAUNAME'][ind])
+    try:
+        bd.ellipse('data/admask/%s.fits' % (s.table['IAUNAME'][ind]),
+                   outname,
+                   x0=cx, y0=cy)
+        fig = bd.EllipsePlot(outname)
+        fig.setup_figure()
+        plt.savefig(outname.replace('dat','png'))
+        plt.close()
+    except:
+        print outname, 'failed'
+    
+
 for i in range(len(s.table)):
     save_profile(i)
     save_image(i)
+    save_ellipse(i)
 
