@@ -1,3 +1,4 @@
+header
 
 data/
   sdss_field/
@@ -92,3 +93,20 @@ Combined RAWFIT files --> fit_deV.fits
 - deVExp -- deV + exp model
 
 - n2Exp -- n=2 + exp model
+
+## yang group catalog
+
+- `imodel[A,B,C]_combined` : `imodelA_1` matched with `SDSS7` by exact value galaxyid. groupN column is
+    generated from internal matching of groupid
+
+- what are group id = 0?
+  - modelA has no groupid=0 entry
+- how different is model A, B, C?
+- Is yang modelC the same as the catalog Jenny gave me?
+  - No.
+- `sample_imodelC.csv` : match db.csv ra, dec with `imodelC_combined` best
+  match symmetric, join all from db.csv.
+
+## stellar age catalogs
+
+
