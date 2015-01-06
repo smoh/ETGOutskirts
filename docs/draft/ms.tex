@@ -65,7 +65,6 @@ for galaxies with overlapping neighbor near the very center.
 We first do a single \Sersic{} fitting on images with the NSA masks applied,
 and use the residual images to create additional masking,
 and reject those with close neighbors.
-<<<<<<< HEAD
 To mask out the remaining neighbors, we use the residuals of single Sersic
 fitting.
 We apply PSF matched filter, threshold at $10-\sigma$ and mask appropriate
@@ -142,8 +141,6 @@ We tend to exclude nearby, bright galaxies preferentially.
     \caption{Effective radius of Exp component vs. its axis ratio}
     \label{fig:Req}
 \end{figure*}
-=======
-To mask out the remaining neighbors, 
 
 We examine whether our selection for images introduces biases
 in the final sample.
@@ -163,6 +160,8 @@ outer component dominates the surface brightness.
 \subsection{Size from the Fundamental Plane}
 \todo{}
 
+
+
 \begin{eqnarray}
        \mu_0 &= 2.5 + \log(2 \pi r^2) - 10 \log(1+z)
 \end{eqnarray}
@@ -179,11 +178,9 @@ the angular diameter distance $D_A$ (kpc/arcsec):
 \end{equation}
 
 \begin{equation}
-\begin{split}
-    \log R_0 &= \frac{1}{1 + 2 b} \Bigl[ a\log \sigma\\
-        &- \frac{b}{2.5} \Bigl(m + 2.5\log \frac{2\pi}{D_A^2} - 10
-        \log (1+z)\Bigr) + c \Bigr]
-\end{split}
+    \log R_0 = \frac{1}{1 + 2 b} \left[ a\log \sigma
+        - \frac{b}{2.5} \left(m + 2.5\log \frac{2\pi}{D_A^2} - 10 \log (1+z)\right)
+        + c \right]
 \end{equation}
 With $b \sim -0.75$, $\log R_0 \propto -0.6 m$
 
