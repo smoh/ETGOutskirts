@@ -141,6 +141,15 @@ class Sample(object):
             print "model %s removed" % (name)
             del self.models[name]
 
+    def __str__(self):
+        str = [
+            'table : %s' % (self.table_name),
+            'datadir : %s' % (self.datadir),
+            'imgdir : %s' % (self.imgdir)
+            ] + [self.models.__str__()]
+        return '\n'.join(str)
+
+
     @property
     def Nmodels(self):
         return len(self.models.keys())

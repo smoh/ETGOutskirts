@@ -44,6 +44,7 @@ def ellipse(image, outname, verbose=False, **kwargs):
     # reset all parameters
     iraf.unlearn('ellipse', 'geompar', 'controlpar', 'samplepar')
     iraf.ellipse.interactive = False
+    iraf.ellipse.xylearn = False  # if True, it prompts input upon faling to find center
 
     # geompar
     iraf.ellipse.x0 = kwargs.pop('x0')
@@ -75,10 +76,13 @@ def ellipse(image, outname, verbose=False, **kwargs):
 
     # run ellipse
     tempname = shorten_iauname(image) + str(uuid.uuid4()) + '.tab'
-    iraf.ellipse(image, tempname)
-    # print ascii table
-    iraf.tprint(tempname, pwidth='INDEF', Stdout=outname)
-    os.remove(tempname)
+    try:
+        iraf.ellipse(image, tempname)
+        # print ascii table
+        iraf.tprint(tempname, pwidth='INDEF', Stdout=outname)
+        os.remove(tempname)
+    except:
+        print 'ellipse failed'
 
 def read_ellipse_output(filename):
     return Table.read(
@@ -114,16 +118,17 @@ class EllipsePlot(object):
     def plot_pa(self, ax=None):
         t = self.t
         pa = t['PA']
-        # pa[pa<0] = pa[pa<0] +180.
+        pa[pa<0] += 180.
         ax.errorbar(t['SMA'], pa, yerr=t['PA_ERR'], fmt='o-')
         ax.plot(t['SMA'][self.badexit], pa[self.badexit], 'ro', mfc='None', ms=12)
         ax.set_ylabel('PA')
+        ax.axhline(180, lw=1)
 
     def plot_ellip(self, ax=None):
         t = self.t
         ax.errorbar(t['SMA'], t['ELLIP'], yerr=t['ELLIP_ERR'], fmt='o-')
         ax.plot(t['SMA'][self.badexit], t['ELLIP'][self.badexit], 'ro', mfc='None', ms=12)
-        ax.plot(t['SMA'], t['A_BIG']/t['RMS'], 'ko:')
+        # ax.plot(t['SMA'], t['A_BIG']/t['PIX_VAR'], 'ko:')
         ax.set_ylabel('Ellipticity')
 
     def plot_3(self, ax=None):
